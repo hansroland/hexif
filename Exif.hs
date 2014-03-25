@@ -62,7 +62,7 @@ data ExifField = ExifField
 
 -- read in the exif data structure
 -- getExif :: Get Exif
-getExif :: BL.ByteString -> Get ExifField
+getExif :: BL.ByteString -> Get [IFDEntry]
 getExif bsExif = do
     -- Exif Header (should not be part of this ByteString !!!
     exifHeader <- getByteString 4       -- Konstante Exif
@@ -75,13 +75,25 @@ getExif bsExif = do
     nOffset <- getWord32
     -- Image File Directory 
     nEntries <- getWord16
+    getIFDEntries (fromIntegral nEntries) getWord16 getWord32
 
+    {-
     getIFDEntry getWord16 getWord32      -- Description (empty)
     getIFDEntry getWord16 getWord32      -- Make (SONY)
     ifd <- getIFDEntry getWord16 getWord32      -- Model (DSC-P92)
     -- return $ Exif (fromIntegral nOffset - 8)
     return $ toExifField ifd bsExif
-   
+   -}
+
+getIFDEntries :: Int -> Get Word16 -> Get Word32 -> Get [IFDEntry]
+getIFDEntries n getWord16 getWord32 =
+    if n == 0 
+        then return []
+        else do
+           entry <- getIFDEntry getWord16 getWord32
+           entries <- getIFDEntries (n - 1) getWord16 getWord32
+           return $ entry : entries
+
 
 
 getIFDEntry ::  Get Word16 -> Get Word32 -> Get IFDEntry
