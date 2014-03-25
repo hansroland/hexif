@@ -14,7 +14,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Exif where
 
-
 import Data.Binary
 import Data.Binary.Get   {-( Get
                       , getWord8
@@ -31,6 +30,8 @@ import qualified Data.ByteString as B
 
 import Hexdump (prettyHex)
 import Numeric (showHex)
+
+import Data.Char
 
 -- import Data.Hex(hex)
 
@@ -85,6 +86,7 @@ getExif bsExif = do
     return $ toExifField ifd bsExif
    -}
 
+-- read n IFD Entries  
 getIFDEntries :: Int -> Get Word16 -> Get Word32 -> Get [IFDEntry]
 getIFDEntries n getWord16 getWord32 =
     if n == 0 
@@ -95,7 +97,7 @@ getIFDEntries n getWord16 getWord32 =
            return $ entry : entries
 
 
-
+-- read a single IFD entry
 getIFDEntry ::  Get Word16 -> Get Word32 -> Get IFDEntry
 getIFDEntry getWord16 getWord32 = do
     tagNr <- getWord16
@@ -106,24 +108,27 @@ getIFDEntry getWord16 getWord32 = do
     
     
 
-toExifField :: IFDEntry -> BL.ByteString -> ExifField
-toExifField (IFDEntry tag format len offsetOrValue) bsExif = 
+-- convert a IFD entry to an ExifField
+toExifField :: BL.ByteString -> IFDEntry -> ExifField
+toExifField bsExif (IFDEntry tag format len offsetOrValue) = 
     case format of
         0x0002 -> ExifField exifTag $ getStringValue len offsetOrValue bsExif
+        0x0003 -> ExifField exifTag $ decodeTagValue exifTag offsetOrValue
         _      -> error $ "Format " ++ show format ++ " not yet implemented" 
     where exifTag = toExifTag tag
     
 
     
-   
+-- subfunctions of toExifField   
 getStringValue :: Int -> Int -> BL.ByteString -> BL.ByteString
 getStringValue len offset bsExif = runGet (getString len offset) bsExif
-    
-   
+     
 getString :: Int -> Int -> Get BL.ByteString
 getString len offset = do
     skip $ offset + 6
     getLazyByteString $ fromIntegral (len - 1) 
+
+ 
 
 
 
@@ -131,8 +136,9 @@ getString len offset = do
 example0 :: IO()
 example0 = do
    input <- BL.readFile "JG1111.exif"
-   let entry = runGet (getExif input) input
-   print entry
+   let entries = runGet (getExif input) input
+   let fields = map (toExifField input) entries
+   mapM_ print fields
 
 
 
@@ -142,49 +148,52 @@ example1 = do
    print $ getStringValue 5 (178 + 6) input
 
 
--- ----------------------------------------------------------------------------------------
--- Process single entry
--- ----------------------------------------------------------------------------------------
+-- translate numerical tag values to the corresponding ByteString value
+decodeTagValue :: ExifTag -> Int -> BL.ByteString
+decodeTagValue TagResolutionUnit 1 = "No absolute unit"
+decodeTagValue TagResolutionUnit 2 = "Inch"
+decodeTagValue TagResolutionUnit 3 = "Centimeter"
+
+decodeTagValue TagOrientation 1 = "Top-left"
+
+decodeTagValue _ n = packStr $ (show n)
+    where 
+       packStr = BL.pack . map (fromIntegral . ord)
+
+-- Definition of all the supported Exif tags
 data ExifTag = TagImageDescription
-             | TagMake
              | TagModel
+             | TagMake
+             | TagOrientation
              | TagUnknown Word16
+             | TagXResolution
+             | TagYResolution
+             | TagResolutionUnit
+             | TagDateTime
+             | TagYcbrcPositioning
+             | TagExifIfdPointer
+             | TagPrintImageMatching
      deriving (Eq, Show)
 
 
-
+-- Convert a Word16 Number to an Exif Tag
 toExifTag :: Word16 -> ExifTag
 toExifTag t 
    | t == 0x010e = TagImageDescription
    | t == 0x010f = TagMake 
    | t == 0x0110 = TagModel
+   | t == 0x0112 = TagOrientation
+   | t == 0x011a = TagXResolution
+   | t == 0x011b = TagYResolution
+   | t == 0x0128 = TagResolutionUnit
+   | t == 0x0132 = TagDateTime
+   | t == 0x0213 = TagYcbrcPositioning
+   | t == 0x8769 = TagExifIfdPointer
+   | t == 0xc4a5 = TagPrintImageMatching
    | otherwise = TagUnknown t
 
 
-
-
--- -------------------------------------------------------------------------------------------
--- Simple example: read a lenght-test file llll-text-llll-text-llll-text
--- ------------------------------------------------------------------------------------------- 
--- llll is big endian 16 bit binary number
--- text is normal ascii text, with the number of characters equal to llll
--- Example file is lenstrings.bin 
---
--- -------------------------------------------------------------------------------------------
-
-getItem :: Get B.ByteString
-getItem = getWord16be >>= getByteString . fromIntegral
-
-
-getItems :: Get [B.ByteString]
-getItems = do
-   empty <- isEmpty
-   if empty
-     then return []
-     else do item <- getItem
-             items <- getItems
-             return (item:items)
-
+ 
 
 
 
@@ -252,17 +261,17 @@ typedef enum {
 	-- EXIF_TAG_MAKE 				= 0x010f,
 	-- EXIF_TAG_MODEL 				= 0x0110,
 	EXIF_TAG_STRIP_OFFSETS 			= 0x0111,
-	EXIF_TAG_ORIENTATION 			= 0x0112,
+	-- EXIF_TAG_ORIENTATION 			= 0x0112,
 	EXIF_TAG_SAMPLES_PER_PIXEL 		= 0x0115,
 	EXIF_TAG_ROWS_PER_STRIP 		= 0x0116,
 	EXIF_TAG_STRIP_BYTE_COUNTS		= 0x0117,
-	EXIF_TAG_X_RESOLUTION 			= 0x011a,
-	EXIF_TAG_Y_RESOLUTION 			= 0x011b,
+	-- EXIF_TAG_X_RESOLUTION 			= 0x011a,
+	-- EXIF_TAG_Y_RESOLUTION 			= 0x011b,
 	EXIF_TAG_PLANAR_CONFIGURATION 		= 0x011c,
-	EXIF_TAG_RESOLUTION_UNIT 		= 0x0128,
+	-- EXIF_TAG_RESOLUTION_UNIT 		= 0x0128,
 	EXIF_TAG_TRANSFER_FUNCTION 		= 0x012d,
 	EXIF_TAG_SOFTWARE 			= 0x0131,
-	EXIF_TAG_DATE_TIME			= 0x0132,
+	-- EXIF_TAG_DATE_TIME			= 0x0132,
 	EXIF_TAG_ARTIST				= 0x013b,
 	EXIF_TAG_WHITE_POINT			= 0x013e,
 	EXIF_TAG_PRIMARY_CHROMATICITIES		= 0x013f,
@@ -273,7 +282,7 @@ typedef enum {
 	EXIF_TAG_JPEG_INTERCHANGE_FORMAT_LENGTH	= 0x0202,
 	EXIF_TAG_YCBCR_COEFFICIENTS		= 0x0211,
 	EXIF_TAG_YCBCR_SUB_SAMPLING		= 0x0212,
-	EXIF_TAG_YCBCR_POSITIONING		= 0x0213,
+	-- EXIF_TAG_YCBCR_POSITIONING		= 0x0213,
 	EXIF_TAG_REFERENCE_BLACK_WHITE		= 0x0214,
 	EXIF_TAG_XML_PACKET			= 0x02bc,
 	EXIF_TAG_RELATED_IMAGE_FILE_FORMAT	= 0x1000,
@@ -287,7 +296,7 @@ typedef enum {
 	EXIF_TAG_FNUMBER			= 0x829d,
 	EXIF_TAG_IPTC_NAA			= 0x83bb,
 	EXIF_TAG_IMAGE_RESOURCES		= 0x8649,
-	EXIF_TAG_EXIF_IFD_POINTER		= 0x8769,
+	-- EXIF_TAG_EXIF_IFD_POINTER		= 0x8769,
 	EXIF_TAG_INTER_COLOR_PROFILE		= 0x8773,
 	EXIF_TAG_EXPOSURE_PROGRAM		= 0x8822,
 	EXIF_TAG_SPECTRAL_SENSITIVITY		= 0x8824,
@@ -353,7 +362,7 @@ typedef enum {
 	EXIF_TAG_SUBJECT_DISTANCE_RANGE		= 0xa40c,
 	EXIF_TAG_IMAGE_UNIQUE_ID		= 0xa420,
 	EXIF_TAG_GAMMA				= 0xa500,
-	EXIF_TAG_PRINT_IMAGE_MATCHING		= 0xc4a5,
+	-- EXIF_TAG_PRINT_IMAGE_MATCHING		= 0xc4a5,
 	EXIF_TAG_PADDING			= 0xea1c
 } ExifTag;
 
