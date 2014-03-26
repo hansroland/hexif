@@ -2,13 +2,14 @@
 -- Exif.hs - Read and Parse the Exif File of a JPEG File
 -- ---------------------------------------------------------------------------------------
 --
--- Try to read (and later write) the exif file of a JPEG image with 
+-- Read (and later write) the exif file of a JPEG image with 
 --     native Haskell code
 --
+-- See: 
+--    http://www.media.mit.edu/pia/Research/deepview/exif.html
+--    http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html   
 --
---    getWord16be reads Data in big-endian Motorla (IBM) byte encoding (same getWord32be)
---
---    getWord16le reads Data in lower-endian Intel byte encoding (same getWord32le)
+--    
 --
 -- ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
@@ -61,45 +62,43 @@ data ExifField = ExifField
     } deriving (Eq, Show)
 
 
+type GetWords = (Get Word16, Get Word32)
+
 -- read in the exif data structure
 -- getExif :: Get Exif
-getExif :: BL.ByteString -> Get [IFDEntry]
-getExif bsExif = do
+getExif :: BL.ByteString -> Get [ExifField]
+getExif input = do
     -- Exif Header (should not be part of this ByteString !!!
     exifHeader <- getByteString 4       -- Konstante Exif
     dummy <- getByteString 2       		-- always 0x0000
     -- Tiff Header 
     tiffAlign <- getWord16be
-    let getWord16 = if fromIntegral tiffAlign == 0x4949 then getWord16le else getWord16be
-    let getWord32 = if fromIntegral tiffAlign == 0x4949 then getWord32le else getWord32be
+    let getWords = if fromIntegral tiffAlign == 0x4949
+        then (getWord16le, getWord32le)
+        else (getWord16be, getWord32be) 
     const2A <- getByteString 2
-    nOffset <- getWord32
+    nOffset <- snd getWords
     -- Image File Directory 
-    nEntries <- getWord16
-    getIFDEntries (fromIntegral nEntries) getWord16 getWord32
-
-    {-
-    getIFDEntry getWord16 getWord32      -- Description (empty)
-    getIFDEntry getWord16 getWord32      -- Make (SONY)
-    ifd <- getIFDEntry getWord16 getWord32      -- Model (DSC-P92)
-    -- return $ Exif (fromIntegral nOffset - 8)
-    return $ toExifField ifd bsExif
-   -}
+    nEntries <- fst getWords
+    entries <- getIFDEntries (fromIntegral nEntries) getWords
+    return $ map (toExifField input getWords) entries
 
 -- read n IFD Entries  
-getIFDEntries :: Int -> Get Word16 -> Get Word32 -> Get [IFDEntry]
-getIFDEntries n getWord16 getWord32 =
+getIFDEntries :: Int -> GetWords -> Get [IFDEntry]
+getIFDEntries n getWords =
     if n == 0 
         then return []
         else do
-           entry <- getIFDEntry getWord16 getWord32
-           entries <- getIFDEntries (n - 1) getWord16 getWord32
+           entry <- getIFDEntry getWords
+           entries <- getIFDEntries (n - 1) getWords
            return $ entry : entries
 
 
 -- read a single IFD entry
-getIFDEntry ::  Get Word16 -> Get Word32 -> Get IFDEntry
-getIFDEntry getWord16 getWord32 = do
+getIFDEntry ::  GetWords -> Get IFDEntry
+getIFDEntry getWords = do
+    let getWord16 = fst getWords
+    let getWord32 = snd getWords
     tagNr <- getWord16
     format <- getWord16
     comps <- getWord32
@@ -109,11 +108,14 @@ getIFDEntry getWord16 getWord32 = do
     
 
 -- convert a IFD entry to an ExifField
-toExifField :: BL.ByteString -> IFDEntry -> ExifField
-toExifField bsExif (IFDEntry tag format len offsetOrValue) = 
+toExifField :: BL.ByteString -> GetWords -> IFDEntry -> ExifField
+toExifField bsExif words (IFDEntry tag format len offsetOrValue) = 
     case format of
         0x0002 -> ExifField exifTag $ getStringValue len offsetOrValue bsExif
         0x0003 -> ExifField exifTag $ decodeTagValue exifTag offsetOrValue
+        0x0004 -> ExifField exifTag $ decodeTagValue exifTag offsetOrValue
+        0x0005 -> ExifField exifTag $ getRationalValue offsetOrValue bsExif words
+        0x0007 -> ExifField exifTag $ packStr $ (show len) ++ " bytes undefined data"
         _      -> error $ "Format " ++ show format ++ " not yet implemented" 
     where exifTag = toExifTag tag
     
@@ -130,14 +132,26 @@ getString len offset = do
 
  
 
+getRationalValue :: Int -> BL.ByteString -> GetWords -> BL.ByteString
+getRationalValue offset bsExif words = runGet (getRationale words offset) bsExif
 
+   
+
+getRationale :: GetWords -> Int -> Get BL.ByteString
+getRationale words offset = do
+   skip $ offset + 6
+   let getWord32 = snd words
+   numerator <- getWord32
+   denumerator <- getWord32
+   return $ packStr $ (show numerator) ++ "/" ++ (show denumerator)
+   
 
 -- Run it
 example0 :: IO()
 example0 = do
    input <- BL.readFile "JG1111.exif"
-   let entries = runGet (getExif input) input
-   let fields = map (toExifField input) entries
+   let fields = runGet (getExif input) input
+   -- let fields = map (toExifField input) entries
    mapM_ print fields
 
 
@@ -150,15 +164,35 @@ example1 = do
 
 -- translate numerical tag values to the corresponding ByteString value
 decodeTagValue :: ExifTag -> Int -> BL.ByteString
-decodeTagValue TagResolutionUnit 1 = "No absolute unit"
-decodeTagValue TagResolutionUnit 2 = "Inch"
-decodeTagValue TagResolutionUnit 3 = "Centimeter"
-
-decodeTagValue TagOrientation 1 = "Top-left"
-
+decodeTagValue TagResolutionUnit n = decodeResolutionUnit n
+decodeTagValue TagOrientation n    = decodeOrientation n
+decodeTagValue TagYCbCrPositioning n = decodeYCbCrPositioning n
 decodeTagValue _ n = packStr $ (show n)
-    where 
-       packStr = BL.pack . map (fromIntegral . ord)
+
+-- interpretation of Resolution Unit
+decodeResolutionUnit :: Int -> BL.ByteString
+decodeResolutionUnit 1 = "No absolute unit"
+decodeResolutionUnit 2 = "Inch"
+decodeResolutionUnit 3 = "Centimeter"
+
+-- interpretation of Orientation 
+decodeOrientation :: Int -> BL.ByteString
+decodeOrientation 1 = "Top-left"
+decodeOrientation 2 = "Top-right" 
+decodeOrientation 3 = "Bottom-right"
+decodeOrientation 4 = "Bottom-left"
+decodeOrientation 5 = "Left-top"
+decodeOrientation 6 = "Right-top"
+decodeOrientation 7 = "Right-bottom"
+decodeOrientation 8 = "Left-bottom"
+
+decodeYCbCrPositioning :: Int -> BL.ByteString
+decodeYCbCrPositioning 1 = "Centered"
+decodeYCbCrPositioning 2 = "Co-sited"
+
+
+-- little support function: normal pack is refused by GHC 
+packStr = BL.pack . map (fromIntegral . ord)
 
 -- Definition of all the supported Exif tags
 data ExifTag = TagImageDescription
@@ -170,7 +204,7 @@ data ExifTag = TagImageDescription
              | TagYResolution
              | TagResolutionUnit
              | TagDateTime
-             | TagYcbrcPositioning
+             | TagYCbCrPositioning
              | TagExifIfdPointer
              | TagPrintImageMatching
      deriving (Eq, Show)
@@ -187,16 +221,10 @@ toExifTag t
    | t == 0x011b = TagYResolution
    | t == 0x0128 = TagResolutionUnit
    | t == 0x0132 = TagDateTime
-   | t == 0x0213 = TagYcbrcPositioning
+   | t == 0x0213 = TagYCbCrPositioning
    | t == 0x8769 = TagExifIfdPointer
    | t == 0xc4a5 = TagPrintImageMatching
    | otherwise = TagUnknown t
-
-
- 
-
-
-
 
 
 
