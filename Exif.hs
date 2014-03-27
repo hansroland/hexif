@@ -68,20 +68,33 @@ type GetWords = (Get Word16, Get Word32)
 -- getExif :: Get Exif
 getExif :: BL.ByteString -> Get [ExifField]
 getExif input = do
-    -- Exif Header (should not be part of this ByteString !!!
-    exifHeader <- getByteString 4       -- Konstante Exif
-    dummy <- getByteString 2       		-- always 0x0000
     -- Tiff Header 
     tiffAlign <- getWord16be
     let getWords = if fromIntegral tiffAlign == 0x4949
         then (getWord16le, getWord32le)
         else (getWord16be, getWord32be) 
     const2A <- getByteString 2
+    -- Image File Directory
     nOffset <- snd getWords
-    -- Image File Directory 
     nEntries <- fst getWords
     entries <- getIFDEntries (fromIntegral nEntries) getWords
+    -- entries <- getIFDBlocks getWords
     return $ map (toExifField input getWords) entries
+
+
+-- read IFD blocks
+getIFDBlocks :: GetWords -> Get [IFDEntry]
+getIFDBlocks getWords = do
+    nOffset <- snd getWords
+    if nOffset == 0
+        then return []
+        else do 
+           pos <- bytesRead
+           skip $ (fromIntegral nOffset) - (fromIntegral pos)
+           nEntries <- fst getWords
+           entries <- getIFDEntries (fromIntegral nEntries) getWords
+           return entries
+
 
 -- read n IFD Entries  
 getIFDEntries :: Int -> GetWords -> Get [IFDEntry]
@@ -127,7 +140,8 @@ getStringValue len offset bsExif = runGet (getString len offset) bsExif
      
 getString :: Int -> Int -> Get BL.ByteString
 getString len offset = do
-    skip $ offset + 6
+    -- skip $ offset + 6
+    skip offset
     getLazyByteString $ fromIntegral (len - 1) 
 
  
@@ -139,7 +153,8 @@ getRationalValue offset bsExif words = runGet (getRationale words offset) bsExif
 
 getRationale :: GetWords -> Int -> Get BL.ByteString
 getRationale words offset = do
-   skip $ offset + 6
+   -- skip $ offset + 6
+   skip offset
    let getWord32 = snd words
    numerator <- getWord32
    denumerator <- getWord32
@@ -149,7 +164,8 @@ getRationale words offset = do
 -- Run it
 example0 :: IO()
 example0 = do
-   input <- BL.readFile "JG1111.exif"
+   inp <- BL.readFile "JG1111.exif"
+   let input = BL.drop 6 inp
    let fields = runGet (getExif input) input
    -- let fields = map (toExifField input) entries
    mapM_ print fields
@@ -191,7 +207,11 @@ decodeYCbCrPositioning 1 = "Centered"
 decodeYCbCrPositioning 2 = "Co-sited"
 
 
--- little support function: normal pack is refused by GHC 
+-- little support function: normal pack is refused by GHC
+-- Hoogle says: pack :: String -> BL.ByteString
+-- GHCi says:   pack :: pack :: [Word8] -> BL.ByteString
+-- Why is Haskell string conversion so difficult?
+packStr :: String -> BL.ByteString
 packStr = BL.pack . map (fromIntegral . ord)
 
 -- Definition of all the supported Exif tags
