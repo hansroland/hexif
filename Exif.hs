@@ -74,16 +74,14 @@ getExif input = do
         then (getWord16le, getWord32le)
         else (getWord16be, getWord32be) 
     const2A <- getByteString 2
-    -- Image File Directory
-    nOffset <- snd getWords
-    nEntries <- fst getWords
-    entries <- getIFDEntries (fromIntegral nEntries) getWords
-    -- entries <- getIFDBlocks getWords
+    -- Image File Directory Blocks
+    blocks <- getIFDBlocks getWords
+    let entries = concat blocks
     return $ map (toExifField input getWords) entries
 
 
 -- read IFD blocks
-getIFDBlocks :: GetWords -> Get [IFDEntry]
+getIFDBlocks :: GetWords -> Get [[IFDEntry]]
 getIFDBlocks getWords = do
     nOffset <- snd getWords
     if nOffset == 0
@@ -92,8 +90,9 @@ getIFDBlocks getWords = do
            pos <- bytesRead
            skip $ (fromIntegral nOffset) - (fromIntegral pos)
            nEntries <- fst getWords
-           entries <- getIFDEntries (fromIntegral nEntries) getWords
-           return entries
+           block <- getIFDEntries (fromIntegral nEntries) getWords
+           blocks <- getIFDBlocks getWords
+           return $ block : blocks
 
 
 -- read n IFD Entries  
@@ -180,16 +179,18 @@ example1 = do
 
 -- translate numerical tag values to the corresponding ByteString value
 decodeTagValue :: ExifTag -> Int -> BL.ByteString
+decodeTagValue TagCompression n    = decodeCompression n
 decodeTagValue TagResolutionUnit n = decodeResolutionUnit n
 decodeTagValue TagOrientation n    = decodeOrientation n
 decodeTagValue TagYCbCrPositioning n = decodeYCbCrPositioning n
-decodeTagValue _ n = packStr $ (show n)
+decodeTagValue _ n = (packStr . show) n
 
 -- interpretation of Resolution Unit
 decodeResolutionUnit :: Int -> BL.ByteString
 decodeResolutionUnit 1 = "No absolute unit"
 decodeResolutionUnit 2 = "Inch"
 decodeResolutionUnit 3 = "Centimeter"
+decodeResulutionUnit n = undef n
 
 -- interpretation of Orientation 
 decodeOrientation :: Int -> BL.ByteString
@@ -201,10 +202,22 @@ decodeOrientation 5 = "Left-top"
 decodeOrientation 6 = "Right-top"
 decodeOrientation 7 = "Right-bottom"
 decodeOrientation 8 = "Left-bottom"
+decodeOrientation n = undef n
 
 decodeYCbCrPositioning :: Int -> BL.ByteString
 decodeYCbCrPositioning 1 = "Centered"
 decodeYCbCrPositioning 2 = "Co-sited"
+decodeYCbCrPositioning n = undef n
+
+decodeCompression :: Int -> BL.ByteString
+decodeCompression 1 = "No compression"
+decodeCompression 2 = "CCITT modified Huffman RLE"
+decodeCompression 3 = "CCITT Group 3 fax"
+decodeCompression 4 = "CCITT Group 4 fax"
+decodeCompression 5 = "LZW"
+decodeCompression 6 = "JPEG (old style)"
+decodeCompression 7 = "JPEG (new style)"
+decodeCompression n = undef n
 
 
 -- little support function: normal pack is refused by GHC
@@ -214,8 +227,12 @@ decodeYCbCrPositioning 2 = "Co-sited"
 packStr :: String -> BL.ByteString
 packStr = BL.pack . map (fromIntegral . ord)
 
+undef :: Int -> BL.ByteString
+undef n = BL.append "undefined "   ((packStr . show) n)
+
 -- Definition of all the supported Exif tags
-data ExifTag = TagImageDescription
+data ExifTag = TagCompression
+             | TagImageDescription
              | TagModel
              | TagMake
              | TagOrientation
@@ -233,6 +250,7 @@ data ExifTag = TagImageDescription
 -- Convert a Word16 Number to an Exif Tag
 toExifTag :: Word16 -> ExifTag
 toExifTag t 
+   | t == 0x0103 = TagCompression
    | t == 0x010e = TagImageDescription
    | t == 0x010f = TagMake 
    | t == 0x0110 = TagModel
