@@ -25,6 +25,7 @@ import Data.Binary.Get   {-( Get
                       )   -}
 
 import Data.Binary.Put
+import Data.List
 import System.IO
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
@@ -75,15 +76,18 @@ getExif input = do
         else (getWord16be, getWord32be) 
     const2A <- getByteString 2
     -- Image File Directory Blocks
-    blocks <- getIFDBlocks getWords
+    nOffset <- snd getWords
+    blocks <- getIFDBlocks nOffset getWords
     let entries = concat blocks
-    return $ map (toExifField input getWords) entries
+    let (usefuls, pointers) = partition (\e -> tag e /= 0x8769) entries
+    let baseTags = map (toExifField input getWords) usefuls
+    return baseTags
 
 
 -- read IFD blocks
-getIFDBlocks :: GetWords -> Get [[IFDEntry]]
-getIFDBlocks getWords = do
-    nOffset <- snd getWords
+getIFDBlocks :: Word32 -> GetWords -> Get [[IFDEntry]]
+getIFDBlocks nOffset getWords = do
+
     if nOffset == 0
         then return []
         else do 
@@ -91,7 +95,8 @@ getIFDBlocks getWords = do
            skip $ (fromIntegral nOffset) - (fromIntegral pos)
            nEntries <- fst getWords
            block <- getIFDEntries (fromIntegral nEntries) getWords
-           blocks <- getIFDBlocks getWords
+           next <- snd getWords
+           blocks <- getIFDBlocks next getWords
            return $ block : blocks
 
 
@@ -242,7 +247,6 @@ data ExifTag = TagCompression
              | TagResolutionUnit
              | TagDateTime
              | TagYCbCrPositioning
-             | TagExifIfdPointer
              | TagPrintImageMatching
      deriving (Eq, Show)
 
@@ -252,7 +256,7 @@ toExifTag :: Word16 -> ExifTag
 toExifTag t 
    | t == 0x0103 = TagCompression
    | t == 0x010e = TagImageDescription
-   | t == 0x010f = TagMake 
+   | t == 0x010f = TagMake
    | t == 0x0110 = TagModel
    | t == 0x0112 = TagOrientation
    | t == 0x011a = TagXResolution
@@ -260,7 +264,6 @@ toExifTag t
    | t == 0x0128 = TagResolutionUnit
    | t == 0x0132 = TagDateTime
    | t == 0x0213 = TagYCbCrPositioning
-   | t == 0x8769 = TagExifIfdPointer
    | t == 0xc4a5 = TagPrintImageMatching
    | otherwise = TagUnknown t
 
@@ -319,7 +322,7 @@ typedef enum {
 	EXIF_TAG_IMAGE_WIDTH 			= 0x0100,
 	EXIF_TAG_IMAGE_LENGTH 			= 0x0101,
 	EXIF_TAG_BITS_PER_SAMPLE 		= 0x0102,
-	EXIF_TAG_COMPRESSION 			= 0x0103,
+	-- EXIF_TAG_COMPRESSION 			= 0x0103,
 	EXIF_TAG_PHOTOMETRIC_INTERPRETATION 	= 0x0106,
 	EXIF_TAG_FILL_ORDER 			= 0x010a,
 	EXIF_TAG_DOCUMENT_NAME 			= 0x010d,
