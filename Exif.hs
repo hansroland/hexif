@@ -60,7 +60,10 @@ data IFDEntry = IFDEntry
 data ExifField = ExifField
     { exifTag :: ExifTag
     , value :: BL.ByteString 
-    } deriving (Eq, Show)
+    } deriving (Eq)
+
+instance Show ExifField where
+    show f = drop 3 (show $ exifTag f) ++ " = " ++ (show $ value f)
 
 
 type GetWords = (Get Word16, Get Word32)
@@ -80,8 +83,12 @@ getExif input = do
     blocks <- getIFDBlocks nOffset getWords
     let entries = concat blocks
     let (usefuls, pointers) = partition (\e -> tag e /= 0x8769) entries
-    let baseTags = map (toExifField input getWords) usefuls
-    return baseTags
+    let tags = map (toExifField input getWords) usefuls
+    additional <- if (length pointers > 0)
+        then getIFDBlocks (fromIntegral $ offsetOrValue $ head pointers)  getWords
+        else return []
+    return $ map (toExifField input getWords) (usefuls ++ concat additional)
+   
 
 
 -- read IFD blocks
@@ -133,6 +140,7 @@ toExifField bsExif words (IFDEntry tag format len offsetOrValue) =
         0x0004 -> ExifField exifTag $ decodeTagValue exifTag offsetOrValue
         0x0005 -> ExifField exifTag $ getRationalValue offsetOrValue bsExif words
         0x0007 -> ExifField exifTag $ packStr $ (show len) ++ " bytes undefined data"
+        0x000A -> ExifField exifTag $ getRationalValue offsetOrValue bsExif words   -- signed rationale !!
         _      -> error $ "Format " ++ show format ++ " not yet implemented" 
     where exifTag = toExifTag tag
     
@@ -144,7 +152,7 @@ getStringValue len offset bsExif = runGet (getString len offset) bsExif
      
 getString :: Int -> Int -> Get BL.ByteString
 getString len offset = do
-    -- skip $ offset + 6
+
     skip offset
     getLazyByteString $ fromIntegral (len - 1) 
 
@@ -157,7 +165,6 @@ getRationalValue offset bsExif words = runGet (getRationale words offset) bsExif
 
 getRationale :: GetWords -> Int -> Get BL.ByteString
 getRationale words offset = do
-   -- skip $ offset + 6
    skip offset
    let getWord32 = snd words
    numerator <- getWord32
@@ -171,7 +178,6 @@ example0 = do
    inp <- BL.readFile "JG1111.exif"
    let input = BL.drop 6 inp
    let fields = runGet (getExif input) input
-   -- let fields = map (toExifField input) entries
    mapM_ print fields
 
 
@@ -248,6 +254,12 @@ data ExifTag = TagCompression
              | TagDateTime
              | TagYCbCrPositioning
              | TagPrintImageMatching
+             | TagExifVersion
+
+             | TagDateTimeOriginal
+             | TagDateTimeDigitized
+             | TagComponentsConfiguration
+             | TagCompressedBitsPerPixel
      deriving (Eq, Show)
 
 
@@ -265,6 +277,11 @@ toExifTag t
    | t == 0x0132 = TagDateTime
    | t == 0x0213 = TagYCbCrPositioning
    | t == 0xc4a5 = TagPrintImageMatching
+   | t == 0x9003 = TagDateTimeOriginal
+   | t == 0x9004 = TagDateTimeDigitized
+   | t == 0x9000 = TagExifVersion
+   | t == 0x9101 = TagComponentsConfiguration
+   | t == 0x9102 = TagCompressedBitsPerPixel
    | otherwise = TagUnknown t
 
 
@@ -373,11 +390,11 @@ typedef enum {
 	EXIF_TAG_ISO_SPEED_RATINGS		= 0x8827,
 	EXIF_TAG_OECF				= 0x8828,
 	EXIF_TAG_TIME_ZONE_OFFSET		= 0x882a,
-	EXIF_TAG_EXIF_VERSION			= 0x9000,
-	EXIF_TAG_DATE_TIME_ORIGINAL		= 0x9003,
-	EXIF_TAG_DATE_TIME_DIGITIZED		= 0x9004,
-	EXIF_TAG_COMPONENTS_CONFIGURATION	= 0x9101,
-	EXIF_TAG_COMPRESSED_BITS_PER_PIXEL	= 0x9102,
+	-- EXIF_TAG_EXIF_VERSION			= 0x9000,
+	-- EXIF_TAG_DATE_TIME_ORIGINAL		= 0x9003,
+	-- EXIF_TAG_DATE_TIME_DIGITIZED		= 0x9004,
+	-- EXIF_TAG_COMPONENTS_CONFIGURATION	= 0x9101,
+	-- EXIF_TAG_COMPRESSED_BITS_PER_PIXEL	= 0x9102,
 	EXIF_TAG_SHUTTER_SPEED_VALUE		= 0x9201,
 	EXIF_TAG_APERTURE_VALUE			= 0x9202,
 	EXIF_TAG_BRIGHTNESS_VALUE		= 0x9203,
