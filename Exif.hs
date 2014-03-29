@@ -50,11 +50,11 @@ data IFDEntry = IFDEntry
 
 data ExifField = ExifField
     { exifTag :: ExifTag
-    , value :: BL.ByteString 
+    , value :: String 
     } deriving (Eq)
 
 instance Show ExifField where
-    show f = drop 3 (show $ exifTag f) ++ " -> " ++ (unpackStr $ value f)
+    show f = drop 3 (show $ exifTag f) ++ " -> " ++ (value f)
 
 
 type GetWords = (Get Word16, Get Word32)
@@ -127,22 +127,21 @@ toExifField bsExif words (IFDEntry tag format len offsetOrValue) =
              0x0003 -> decodeTagValue exifTag offsetOrValue
              0x0004 -> decodeTagValue exifTag offsetOrValue
              0x0005 -> getRationalValue exifTag offsetOrValue bsExif words
-             0x0007 -> packStr $ (show len) ++ " bytes undefined data"
+             0x0007 -> (show len) ++ " bytes undefined data"
              0x000A -> getRationalValue exifTag offsetOrValue bsExif words   -- signed rationale !!
              _      -> error $ "Format " ++ show format ++ " not yet implemented" 
  
-
 -- subfunctions of toExifField   
-getStringValue :: Int -> Int -> BL.ByteString -> BL.ByteString
+getStringValue :: Int -> Int -> BL.ByteString -> String
 getStringValue len offset bsExif = runGet (getString len offset) bsExif
      
-getString :: Int -> Int -> Get BL.ByteString
+getString :: Int -> Int -> Get String
 getString len offset = do
     skip offset
-    getLazyByteString $ fromIntegral (len - 1) 
-
+    lazy <- getLazyByteString $ fromIntegral (len - 1) 
+    return $ unpackLazyBS lazy
  
-getRationalValue :: ExifTag -> Int -> BL.ByteString -> GetWords -> BL.ByteString
+getRationalValue :: ExifTag -> Int -> BL.ByteString -> GetWords -> String
 getRationalValue exifTag offset bsExif words = printRationalValue exifTag rat
     where rat = runGet (getRationale words offset) bsExif
 
@@ -155,49 +154,54 @@ getRationale words@(getWord16, getWord32) offset = do
    return (fromIntegral num, fromIntegral denum)
 
 
-printRationalValue :: ExifTag -> (Int,Int) -> BL.ByteString
+printRationalValue :: ExifTag -> (Int,Int) -> String
+printRationalValue TagExposureTime rat = fmtRatWithSlash rat ++ " sec."
+printRationalValue TagFNumber rat = "f/" ++ fmtRatFloat rat
 printRationalValue _  rat = fmtRat rat
 
 
 
 -- format a rational number with a slash
-fmtRatWithSlash :: (Int, Int) -> BL.ByteString
+fmtRatWithSlash :: (Int, Int) -> String
 fmtRatWithSlash (num,denum) =
-   packStr $ (show num) ++ "/" ++ (show denum)
+    (show $ div num ggt) ++ "/" ++ (show $ div denum ggt)
+    where ggt = gcd num denum
 
-fmtRat :: (Int, Int) -> BL.ByteString
+fmtRat :: (Int, Int) -> String
 fmtRat r@(num, denum) = 
      if mod num denum == 0 then fmtRatInt r else fmtRatFloat r
 
    
-fmtRatInt :: (Int, Int) -> BL.ByteString
-fmtRatInt (num, denum) = packStr $ show $ div num denum
+fmtRatInt :: (Int, Int) -> String
+fmtRatInt (num, denum) = show $ div num denum
 
 
 
-fmtRatFloat :: (Int, Int) -> BL.ByteString
+fmtRatFloat :: (Int, Int) -> String
 fmtRatFloat (num, denum) =
-     packStr $ show $ (((fromIntegral num)::Float) / ((fromIntegral denum):: Float))
+     show $ (((fromIntegral num)::Float) / ((fromIntegral denum):: Float))
 
 
 
 -- translate integer tag values to the corresponding ByteString value
-decodeTagValue :: ExifTag -> Int -> BL.ByteString
+decodeTagValue :: ExifTag -> Int -> String
 decodeTagValue TagCompression n    = decodeCompression n
 decodeTagValue TagResolutionUnit n = decodeResolutionUnit n
 decodeTagValue TagOrientation n    = decodeOrientation n
 decodeTagValue TagYCbCrPositioning n = decodeYCbCrPositioning n
-decodeTagValue _ n = (packStr . show) n
+decodeTagValue TagExposureProgram n = decodeTagExposureProgram n
+decodeTagValue TagSceneCaptureType n = decodeSceneCaptureType n
+decodeTagValue _ n = show n
 
 -- interpretation of tag Resolution Unit
-decodeResolutionUnit :: Int -> BL.ByteString
+decodeResolutionUnit :: Int -> String
 decodeResolutionUnit 1 = "No absolute unit"
 decodeResolutionUnit 2 = "Inch"
 decodeResolutionUnit 3 = "Centimeter"
 decodeResulutionUnit n = undef n
 
 -- interpretation of tag Orientation 
-decodeOrientation :: Int -> BL.ByteString
+decodeOrientation :: Int -> String
 decodeOrientation 1 = "Top-left"
 decodeOrientation 2 = "Top-right" 
 decodeOrientation 3 = "Bottom-right"
@@ -209,13 +213,13 @@ decodeOrientation 8 = "Left-bottom"
 decodeOrientation n = undef n
 
 --interpretation of tag YCbCrPositioning
-decodeYCbCrPositioning :: Int -> BL.ByteString
+decodeYCbCrPositioning :: Int -> String
 decodeYCbCrPositioning 1 = "Centered"
 decodeYCbCrPositioning 2 = "Co-sited"
 decodeYCbCrPositioning n = undef n
 
 -- interpretation of tag Compression 
-decodeCompression :: Int -> BL.ByteString
+decodeCompression :: Int -> String
 decodeCompression 1 = "No compression"
 decodeCompression 2 = "CCITT modified Huffman RLE"
 decodeCompression 3 = "CCITT Group 3 fax"
@@ -225,19 +229,36 @@ decodeCompression 6 = "JPEG compression"
 decodeCompression 7 = "JPEG (new style)"
 decodeCompression n = undef n
 
+-- interpretation of tag ExposureProgram
+decodeTagExposureProgram :: Int -> String
+decodeTagExposureProgram 0 = "Not defined"
+decodeTagExposureProgram 1 = "Manual"
+decodeTagExposureProgram 2 = "Normal program"
+decodeTagExposureProgram 3 = "Aperture priority"
+decodeTagExposureProgram 4 = "Shutter priority"
+decodeTagExposureProgram 5 = "Creative program" -- (biased toward depth of field)
+decodeTagExposureProgram 6 = "Action program"   -- (biased toward fast shutter speed)
+decodeTagExposureProgram 7 = "Portrait mode"    -- (for closeup photos with the background out of focus)
+decodeTagExposureProgram 8 = "Landscape mode"   -- (for landscape photos with the background in focus)
+decodeTagExposureProgram n = undef n
+
+-- interpretation of tag SceneCaptureType
+decodeSceneCaptureType :: Int -> String
+decodeSceneCaptureType 0 = "Standard"
+decodeSceneCaptureType 1 = "Landscape"
+decodeSceneCaptureType 2 = "Portrait"
+decodeSceneCaptureType 3 = "Night scene"
+decodeSceneCaptureType n = undef n
 
 -- little support functions: normal pack/unpack are refused by GHC
--- Hoogle says: pack :: String -> BL.ByteString
--- GHCi says:   pack :: pack :: [Word8] -> BL.ByteString
+-- Hoogle says: unpack :: BL.ByteString -> String
+-- GHCi says:   unpack ::  BL.ByteString -> [Word8]
 -- Why is Haskell string conversion so difficult?
-packStr :: String -> BL.ByteString
-packStr = BL.pack . map (fromIntegral . ord)
+unpackLazyBS :: BL.ByteString -> String
+unpackLazyBS = map (chr . fromIntegral)  . BL.unpack
 
-unpackStr :: BL.ByteString -> String
-unpackStr = map (chr . fromIntegral)  . BL.unpack
-
-undef :: Int -> BL.ByteString
-undef n = BL.append "undefined "   ((packStr . show) n)
+undef :: Int -> String
+undef n = "undefined " ++  (show n)
 
 -- Definition of all the supported Exif tags
 data ExifTag = TagCompression
@@ -256,6 +277,7 @@ data ExifTag = TagCompression
              | TagExposureTime
              | TagFNumber
              | TagExposureProgram
+             | TagISOSpeedRatings
              | TagExifVersion
              | TagDateTimeOriginal
              | TagDateTimeDigitized
@@ -300,6 +322,7 @@ toExifTag t
    | t == 0x829a = TagExposureTime
    | t == 0x829d = TagFNumber
    | t == 0x8822 = TagExposureProgram
+   | t == 0x8827 = TagISOSpeedRatings
    | t == 0x9000 = TagExifVersion
    | t == 0x9003 = TagDateTimeOriginal
    | t == 0x9004 = TagDateTimeDigitized
