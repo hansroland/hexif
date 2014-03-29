@@ -59,8 +59,7 @@ instance Show ExifField where
 
 type GetWords = (Get Word16, Get Word32)
 
--- read in the exif data structure
--- getExif :: Get Exif
+-- Main function to read in the exif data structure
 getExif :: BL.ByteString -> Get [ExifField]
 getExif input = do
     -- Tiff Header 
@@ -81,19 +80,18 @@ getExif input = do
     return $ map (toExifField input getWords) (usefuls ++ concat additional)
    
 
-
 -- read IFD blocks
 getIFDBlocks :: Word32 -> GetWords -> Get [[IFDEntry]]
-getIFDBlocks nOffset getWords = do
+getIFDBlocks nOffset getWords@(getWord16, getWord32) = do
 
     if nOffset == 0
         then return []
         else do 
            pos <- bytesRead
            skip $ (fromIntegral nOffset) - (fromIntegral pos)
-           nEntries <- fst getWords
+           nEntries <- getWord16
            block <- getIFDEntries (fromIntegral nEntries) getWords
-           next <- snd getWords
+           next <- getWord32
            blocks <- getIFDBlocks next getWords
            return $ block : blocks
 
@@ -110,9 +108,7 @@ getIFDEntries n getWords =
 
 -- read a single IFD entry
 getIFDEntry ::  GetWords -> Get IFDEntry
-getIFDEntry getWords = do
-    let getWord16 = fst getWords
-    let getWord32 = snd getWords
+getIFDEntry (getWord16, getWord32)  = do
     tagNr <- getWord16
     format <- getWord16
     comps <- getWord32
@@ -120,43 +116,39 @@ getIFDEntry getWords = do
     return $ IFDEntry tagNr format (fromIntegral comps) (fromIntegral offset)
     
     
-
 -- convert a IFD entry to an ExifField
 toExifField :: BL.ByteString -> GetWords -> IFDEntry -> ExifField
 toExifField bsExif words (IFDEntry tag format len offsetOrValue) = 
-    case format of
-        0x0002 -> ExifField exifTag $ getStringValue len offsetOrValue bsExif
-        0x0003 -> ExifField exifTag $ decodeTagValue exifTag offsetOrValue
-        0x0004 -> ExifField exifTag $ decodeTagValue exifTag offsetOrValue
-        0x0005 -> ExifField exifTag $ getRationalValue offsetOrValue bsExif words
-        0x0007 -> ExifField exifTag $ packStr $ (show len) ++ " bytes undefined data"
-        0x000A -> ExifField exifTag $ getRationalValue offsetOrValue bsExif words   -- signed rationale !!
-        _      -> error $ "Format " ++ show format ++ " not yet implemented" 
-    where exifTag = toExifTag tag
-    
+    ExifField exifTag value
+       where 
+          exifTag = toExifTag tag
+          value = case format of
+             0x0002 -> getStringValue len offsetOrValue bsExif
+             0x0003 -> decodeTagValue exifTag offsetOrValue
+             0x0004 -> decodeTagValue exifTag offsetOrValue
+             0x0005 -> getRationalValue offsetOrValue bsExif words
+             0x0007 -> packStr $ (show len) ++ " bytes undefined data"
+             0x000A -> getRationalValue offsetOrValue bsExif words   -- signed rationale !!
+             _      -> error $ "Format " ++ show format ++ " not yet implemented" 
+ 
 
-    
 -- subfunctions of toExifField   
 getStringValue :: Int -> Int -> BL.ByteString -> BL.ByteString
 getStringValue len offset bsExif = runGet (getString len offset) bsExif
      
 getString :: Int -> Int -> Get BL.ByteString
 getString len offset = do
-
     skip offset
     getLazyByteString $ fromIntegral (len - 1) 
 
  
-
 getRationalValue :: Int -> BL.ByteString -> GetWords -> BL.ByteString
 getRationalValue offset bsExif words = runGet (getRationale words offset) bsExif
 
    
-
 getRationale :: GetWords -> Int -> Get BL.ByteString
-getRationale words offset = do
+getRationale words@(getWord16, getWord32) offset = do
    skip offset
-   let getWord32 = snd words
    numerator <- getWord32
    denumerator <- getWord32
    return $ packStr $ (show numerator) ++ "/" ++ (show denumerator)
@@ -170,12 +162,6 @@ example0 = do
    let fields = runGet (getExif input) input
    mapM_ print fields
 
-
-
-example1 :: IO()
-example1 = do
-   input <- BL.readFile "JG1111.exif"
-   print $ getStringValue 5 (178 + 6) input
 
 
 -- translate numerical tag values to the corresponding ByteString value
@@ -221,7 +207,7 @@ decodeCompression 7 = "JPEG (new style)"
 decodeCompression n = undef n
 
 
--- little support function: normal pack is refused by GHC
+-- little support functions: normal pack/unpack are refused by GHC
 -- Hoogle says: pack :: String -> BL.ByteString
 -- GHCi says:   pack :: pack :: [Word8] -> BL.ByteString
 -- Why is Haskell string conversion so difficult?
@@ -251,9 +237,7 @@ data ExifTag = TagCompression
              | TagExposureTime
              | TagFNumber
              | TagExposureProgram
- 
              | TagExifVersion
-
              | TagDateTimeOriginal
              | TagDateTimeDigitized
              | TagComponentsConfiguration
@@ -323,17 +307,6 @@ toExifTag t
    | otherwise = TagTagUnknown t
 
 
-
-{-
--- use markerIntValue to compare with a marker eg 0xFFD8
-markerIntValue :: JpegSegment -> Int
-markerIntValue = fromIntegral . runGet getVal . segMarker
-   where getVal = do
-         getWord16be
--}
-
-
-{-
 
 data IfdType = TypeByte
              | TypeAscii
