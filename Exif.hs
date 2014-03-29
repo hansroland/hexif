@@ -13,7 +13,7 @@
 --
 -- ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-module Exif where
+-- module Exif where
 
 import Data.Binary
 import Data.Binary.Get   {-( Get
@@ -126,9 +126,9 @@ toExifField bsExif words (IFDEntry tag format len offsetOrValue) =
              0x0002 -> getStringValue len offsetOrValue bsExif
              0x0003 -> decodeTagValue exifTag offsetOrValue
              0x0004 -> decodeTagValue exifTag offsetOrValue
-             0x0005 -> getRationalValue offsetOrValue bsExif words
+             0x0005 -> getRationalValue exifTag offsetOrValue bsExif words
              0x0007 -> packStr $ (show len) ++ " bytes undefined data"
-             0x000A -> getRationalValue offsetOrValue bsExif words   -- signed rationale !!
+             0x000A -> getRationalValue exifTag offsetOrValue bsExif words   -- signed rationale !!
              _      -> error $ "Format " ++ show format ++ " not yet implemented" 
  
 
@@ -142,29 +142,46 @@ getString len offset = do
     getLazyByteString $ fromIntegral (len - 1) 
 
  
-getRationalValue :: Int -> BL.ByteString -> GetWords -> BL.ByteString
-getRationalValue offset bsExif words = runGet (getRationale words offset) bsExif
+getRationalValue :: ExifTag -> Int -> BL.ByteString -> GetWords -> BL.ByteString
+getRationalValue exifTag offset bsExif words = printRationalValue exifTag rat
+    where rat = runGet (getRationale words offset) bsExif
 
-   
-getRationale :: GetWords -> Int -> Get BL.ByteString
+
+getRationale :: GetWords -> Int -> Get (Int, Int)
 getRationale words@(getWord16, getWord32) offset = do
    skip offset
-   numerator <- getWord32
-   denumerator <- getWord32
-   return $ packStr $ (show numerator) ++ "/" ++ (show denumerator)
+   num <- getWord32
+   denum <- getWord32
+   return (fromIntegral num, fromIntegral denum)
+
+
+printRationalValue :: ExifTag -> (Int,Int) -> BL.ByteString
+printRationalValue _  rat = fmtRat rat
+
+
+
+-- format a rational number with a slash
+fmtRatWithSlash :: (Int, Int) -> BL.ByteString
+fmtRatWithSlash (num,denum) =
+   packStr $ (show num) ++ "/" ++ (show denum)
+
+fmtRat :: (Int, Int) -> BL.ByteString
+fmtRat r@(num, denum) = 
+     if mod num denum == 0 then fmtRatInt r else fmtRatFloat r
+
    
-
--- Run it
-example0 :: IO()
-example0 = do
-   inp <- BL.readFile "JG1111.exif"
-   let input = BL.drop 6 inp
-   let fields = runGet (getExif input) input
-   mapM_ print fields
+fmtRatInt :: (Int, Int) -> BL.ByteString
+fmtRatInt (num, denum) = packStr $ show $ div num denum
 
 
 
--- translate numerical tag values to the corresponding ByteString value
+fmtRatFloat :: (Int, Int) -> BL.ByteString
+fmtRatFloat (num, denum) =
+     packStr $ show $ (((fromIntegral num)::Float) / ((fromIntegral denum):: Float))
+
+
+
+-- translate integer tag values to the corresponding ByteString value
 decodeTagValue :: ExifTag -> Int -> BL.ByteString
 decodeTagValue TagCompression n    = decodeCompression n
 decodeTagValue TagResolutionUnit n = decodeResolutionUnit n
@@ -172,14 +189,14 @@ decodeTagValue TagOrientation n    = decodeOrientation n
 decodeTagValue TagYCbCrPositioning n = decodeYCbCrPositioning n
 decodeTagValue _ n = (packStr . show) n
 
--- interpretation of Resolution Unit
+-- interpretation of tag Resolution Unit
 decodeResolutionUnit :: Int -> BL.ByteString
 decodeResolutionUnit 1 = "No absolute unit"
 decodeResolutionUnit 2 = "Inch"
 decodeResolutionUnit 3 = "Centimeter"
 decodeResulutionUnit n = undef n
 
--- interpretation of Orientation 
+-- interpretation of tag Orientation 
 decodeOrientation :: Int -> BL.ByteString
 decodeOrientation 1 = "Top-left"
 decodeOrientation 2 = "Top-right" 
@@ -191,18 +208,20 @@ decodeOrientation 7 = "Right-bottom"
 decodeOrientation 8 = "Left-bottom"
 decodeOrientation n = undef n
 
+--interpretation of tag YCbCrPositioning
 decodeYCbCrPositioning :: Int -> BL.ByteString
 decodeYCbCrPositioning 1 = "Centered"
 decodeYCbCrPositioning 2 = "Co-sited"
 decodeYCbCrPositioning n = undef n
 
+-- interpretation of tag Compression 
 decodeCompression :: Int -> BL.ByteString
 decodeCompression 1 = "No compression"
 decodeCompression 2 = "CCITT modified Huffman RLE"
 decodeCompression 3 = "CCITT Group 3 fax"
 decodeCompression 4 = "CCITT Group 4 fax"
 decodeCompression 5 = "LZW"
-decodeCompression 6 = "JPEG (old style)"
+decodeCompression 6 = "JPEG compression"
 decodeCompression 7 = "JPEG (new style)"
 decodeCompression n = undef n
 
@@ -307,6 +326,17 @@ toExifTag t
    | otherwise = TagTagUnknown t
 
 
+
+-- Run it
+main :: IO()
+main = do
+   inp <- BL.readFile "JG1111.exif"
+   let input = BL.drop 6 inp
+   let fields = runGet (getExif input) input
+   mapM_ print fields
+   
+
+{-
 
 data IfdType = TypeByte
              | TypeAscii
