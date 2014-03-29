@@ -23,20 +23,11 @@ import Data.Binary.Get   {-( Get
                       , skip
                       , bytesRead
                       )   -}
-
-import Data.Binary.Put
 import Data.List
+import Data.Char
 import System.IO
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
-
-import Hexdump (prettyHex)
-import Numeric (showHex)
-
-import Data.Char
-
--- import Data.Hex(hex)
-
 
 -- ------------------------------------------------------------------------------
 -- Data Structures
@@ -63,7 +54,7 @@ data ExifField = ExifField
     } deriving (Eq)
 
 instance Show ExifField where
-    show f = drop 3 (show $ exifTag f) ++ " = " ++ (show $ value f)
+    show f = drop 3 (show $ exifTag f) ++ " -> " ++ (unpackStr $ value f)
 
 
 type GetWords = (Get Word16, Get Word32)
@@ -106,8 +97,7 @@ getIFDBlocks nOffset getWords = do
            blocks <- getIFDBlocks next getWords
            return $ block : blocks
 
-
--- read n IFD Entries  
+-- read a single IFD block. It contains n IFD entries. 
 getIFDEntries :: Int -> GetWords -> Get [IFDEntry]
 getIFDEntries n getWords =
     if n == 0 
@@ -238,6 +228,9 @@ decodeCompression n = undef n
 packStr :: String -> BL.ByteString
 packStr = BL.pack . map (fromIntegral . ord)
 
+unpackStr :: BL.ByteString -> String
+unpackStr = map (chr . fromIntegral)  . BL.unpack
+
 undef :: Int -> BL.ByteString
 undef n = BL.append "undefined "   ((packStr . show) n)
 
@@ -247,19 +240,42 @@ data ExifTag = TagCompression
              | TagModel
              | TagMake
              | TagOrientation
-             | TagUnknown Word16
+             | TagTagUnknown Word16
              | TagXResolution
              | TagYResolution
              | TagResolutionUnit
              | TagDateTime
+             | TagJPEGInterchangeFormat
+             | TagJPEGInterchangeFormatLength
              | TagYCbCrPositioning
-             | TagPrintImageMatching
+             | TagExposureTime
+             | TagFNumber
+             | TagExposureProgram
+ 
              | TagExifVersion
 
              | TagDateTimeOriginal
              | TagDateTimeDigitized
              | TagComponentsConfiguration
              | TagCompressedBitsPerPixel
+             | TagExposureBiasValue
+             | TagMaxApertureValue
+             | TagMeteringMode
+             | TagLightSource
+             | TagFlash
+             | TagFocalLength
+             | TagMakerNote
+             | TagFlashpixVersion
+             | TagColorSpace
+             | TagPixelXDimension
+             | TagPixelYDimension
+             | TagFileSource
+             | TagSceneType
+             | TagCustomRendered
+             | TagExposureMode
+             | TagWhiteBalance
+             | TagSceneCaptureType
+             | TagPrintImageMatching
      deriving (Eq, Show)
 
 
@@ -275,14 +291,36 @@ toExifTag t
    | t == 0x011b = TagYResolution
    | t == 0x0128 = TagResolutionUnit
    | t == 0x0132 = TagDateTime
+   | t == 0x0201 = TagJPEGInterchangeFormat
+   | t == 0x0202 = TagJPEGInterchangeFormatLength
    | t == 0x0213 = TagYCbCrPositioning
-   | t == 0xc4a5 = TagPrintImageMatching
+   | t == 0x829a = TagExposureTime
+   | t == 0x829d = TagFNumber
+   | t == 0x8822 = TagExposureProgram
+   | t == 0x9000 = TagExifVersion
    | t == 0x9003 = TagDateTimeOriginal
    | t == 0x9004 = TagDateTimeDigitized
-   | t == 0x9000 = TagExifVersion
    | t == 0x9101 = TagComponentsConfiguration
    | t == 0x9102 = TagCompressedBitsPerPixel
-   | otherwise = TagUnknown t
+   | t == 0x9204 = TagExposureBiasValue
+   | t == 0x9205 = TagMaxApertureValue
+   | t == 0x9207 = TagMeteringMode
+   | t == 0x9208 = TagLightSource
+   | t == 0x9209 = TagFlash
+   | t == 0x920a = TagFocalLength
+   | t == 0x927c = TagMakerNote
+   | t == 0xa000 = TagFlashpixVersion
+   | t == 0xa001 = TagColorSpace
+   | t == 0xa002 = TagPixelXDimension
+   | t == 0xa003 = TagPixelYDimension
+   | t == 0xa300 = TagFileSource
+   | t == 0xa301 = TagSceneType
+   | t == 0xa401 = TagCustomRendered
+   | t == 0xa402 = TagExposureMode
+   | t == 0xa403 = TagWhiteBalance
+   | t == 0xa406 = TagSceneCaptureType
+   | t == 0xc4a5 = TagPrintImageMatching
+   | otherwise = TagTagUnknown t
 
 
 
@@ -364,8 +402,8 @@ typedef enum {
 	EXIF_TAG_SUB_IFDS			= 0x014a,
 	EXIF_TAG_TRANSFER_RANGE			= 0x0156,
 	EXIF_TAG_JPEG_PROC			= 0x0200,
-	EXIF_TAG_JPEG_INTERCHANGE_FORMAT	= 0x0201,
-	EXIF_TAG_JPEG_INTERCHANGE_FORMAT_LENGTH	= 0x0202,
+	-- EXIF_TAG_JPEG_INTERCHANGE_FORMAT	= 0x0201,
+	-- EXIF_TAG_JPEG_INTERCHANGE_FORMAT_LENGTH	= 0x0202,
 	EXIF_TAG_YCBCR_COEFFICIENTS		= 0x0211,
 	EXIF_TAG_YCBCR_SUB_SAMPLING		= 0x0212,
 	-- EXIF_TAG_YCBCR_POSITIONING		= 0x0213,
@@ -378,13 +416,13 @@ typedef enum {
 	EXIF_TAG_CFA_PATTERN			= 0x828e,
 	EXIF_TAG_BATTERY_LEVEL			= 0x828f,
 	EXIF_TAG_COPYRIGHT			= 0x8298,
-	EXIF_TAG_EXPOSURE_TIME			= 0x829a,
-	EXIF_TAG_FNUMBER			= 0x829d,
+	-- EXIF_TAG_EXPOSURE_TIME			= 0x829a,
+	-- EXIF_TAG_FNUMBER			= 0x829d,
 	EXIF_TAG_IPTC_NAA			= 0x83bb,
 	EXIF_TAG_IMAGE_RESOURCES		= 0x8649,
 	-- EXIF_TAG_EXIF_IFD_POINTER		= 0x8769,
 	EXIF_TAG_INTER_COLOR_PROFILE		= 0x8773,
-	EXIF_TAG_EXPOSURE_PROGRAM		= 0x8822,
+	-- EXIF_TAG_EXPOSURE_PROGRAM		= 0x8822,
 	EXIF_TAG_SPECTRAL_SENSITIVITY		= 0x8824,
 	EXIF_TAG_GPS_INFO_IFD_POINTER		= 0x8825,
 	EXIF_TAG_ISO_SPEED_RATINGS		= 0x8827,
@@ -398,16 +436,16 @@ typedef enum {
 	EXIF_TAG_SHUTTER_SPEED_VALUE		= 0x9201,
 	EXIF_TAG_APERTURE_VALUE			= 0x9202,
 	EXIF_TAG_BRIGHTNESS_VALUE		= 0x9203,
-	EXIF_TAG_EXPOSURE_BIAS_VALUE		= 0x9204,
-	EXIF_TAG_MAX_APERTURE_VALUE		= 0x9205,
+	-- EXIF_TAG_EXPOSURE_BIAS_VALUE		= 0x9204,
+	-- EXIF_TAG_MAX_APERTURE_VALUE		= 0x9205,
 	EXIF_TAG_SUBJECT_DISTANCE		= 0x9206,
-	EXIF_TAG_METERING_MODE			= 0x9207,
-	EXIF_TAG_LIGHT_SOURCE			= 0x9208,
-	EXIF_TAG_FLASH				= 0x9209,
-	EXIF_TAG_FOCAL_LENGTH			= 0x920a,
+	-- EXIF_TAG_METERING_MODE			= 0x9207,
+	-- EXIF_TAG_LIGHT_SOURCE			= 0x9208,
+	-- EXIF_TAG_FLASH				= 0x9209,
+	-- EXIF_TAG_FOCAL_LENGTH			= 0x920a,
 	EXIF_TAG_SUBJECT_AREA			= 0x9214,
 	EXIF_TAG_TIFF_EP_STANDARD_ID		= 0x9216,
-	EXIF_TAG_MAKER_NOTE			= 0x927c,
+	-- EXIF_TAG_MAKER_NOTE			= 0x927c,
 	EXIF_TAG_USER_COMMENT			= 0x9286,
 	EXIF_TAG_SUB_SEC_TIME			= 0x9290,
 	EXIF_TAG_SUB_SEC_TIME_ORIGINAL		= 0x9291,
@@ -417,10 +455,10 @@ typedef enum {
 	EXIF_TAG_XP_AUTHOR			= 0x9c9d,
 	EXIF_TAG_XP_KEYWORDS			= 0x9c9e,
 	EXIF_TAG_XP_SUBJECT			= 0x9c9f,
-	EXIF_TAG_FLASH_PIX_VERSION		= 0xa000,
-	EXIF_TAG_COLOR_SPACE			= 0xa001,
-	EXIF_TAG_PIXEL_X_DIMENSION		= 0xa002,
-	EXIF_TAG_PIXEL_Y_DIMENSION		= 0xa003,
+	-- EXIF_TAG_FLASH_PIX_VERSION		= 0xa000,
+	-- EXIF_TAG_COLOR_SPACE			= 0xa001,
+	-- EXIF_TAG_PIXEL_X_DIMENSION		= 0xa002,
+	-- EXIF_TAG_PIXEL_Y_DIMENSION		= 0xa003,
 	EXIF_TAG_RELATED_SOUND_FILE		= 0xa004,
 	EXIF_TAG_INTEROPERABILITY_IFD_POINTER	= 0xa005,
 	EXIF_TAG_FLASH_ENERGY			= 0xa20b,
@@ -431,15 +469,15 @@ typedef enum {
 	EXIF_TAG_SUBJECT_LOCATION		= 0xa214,
 	EXIF_TAG_EXPOSURE_INDEX			= 0xa215,
 	EXIF_TAG_SENSING_METHOD			= 0xa217,
-	EXIF_TAG_FILE_SOURCE			= 0xa300,
-	EXIF_TAG_SCENE_TYPE			= 0xa301,
+	-- EXIF_TAG_FILE_SOURCE			= 0xa300,
+	-- EXIF_TAG_SCENE_TYPE			= 0xa301,
 	EXIF_TAG_NEW_CFA_PATTERN		= 0xa302,
-	EXIF_TAG_CUSTOM_RENDERED		= 0xa401,
-	EXIF_TAG_EXPOSURE_MODE			= 0xa402,
-	EXIF_TAG_WHITE_BALANCE			= 0xa403,
+	-- EXIF_TAG_CUSTOM_RENDERED		= 0xa401,
+	-- EXIF_TAG_EXPOSURE_MODE			= 0xa402,
+	-- EXIF_TAG_WHITE_BALANCE			= 0xa403,
 	EXIF_TAG_DIGITAL_ZOOM_RATIO		= 0xa404,
 	EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM	= 0xa405,
-	EXIF_TAG_SCENE_CAPTURE_TYPE		= 0xa406,
+	-- EXIF_TAG_SCENE_CAPTURE_TYPE		= 0xa406,
 	EXIF_TAG_GAIN_CONTROL			= 0xa407,
 	EXIF_TAG_CONTRAST			= 0xa408,
 	EXIF_TAG_SATURATION			= 0xa409,
