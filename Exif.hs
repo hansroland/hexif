@@ -12,7 +12,7 @@
 --    
 --
 -- ----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 -- module Exif where
 
 import Data.Binary
@@ -26,6 +26,7 @@ import Data.Binary.Get   {-( Get
 import Data.List
 import Data.Char
 import System.IO
+import Data.String.Utils
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
 
@@ -46,6 +47,7 @@ data IFDEntry = IFDEntry
     , format :: Word16       	-- 2 Bytes
     , components :: Int   		-- 4 Bytes
     , offsetOrValue :: Int		-- 4 Bytes
+    , strValue :: String
     } deriving (Eq, Show)
 
 data ExifField = ExifField
@@ -78,12 +80,11 @@ getExif input = do
         then getIFDBlocks (fromIntegral $ offsetOrValue $ head pointers)  getWords
         else return []
     return $ map (toExifField input getWords) (usefuls ++ concat additional)
-   
+ 
 
 -- read IFD blocks
 getIFDBlocks :: Word32 -> GetWords -> Get [[IFDEntry]]
 getIFDBlocks nOffset getWords@(getWord16, getWord32) = do
-
     if nOffset == 0
         then return []
         else do 
@@ -112,22 +113,24 @@ getIFDEntry (getWord16, getWord32)  = do
     tagNr <- getWord16
     format <- getWord16
     comps <- getWord32
-    offset <- getWord32
-    return $ IFDEntry tagNr format (fromIntegral comps) (fromIntegral offset)
+    strBsValue <- getLazyByteString 4
+    let offset = runGet getWord32 strBsValue
+    -- offset <- getWord32
+    return $ IFDEntry tagNr format (fromIntegral comps) (fromIntegral offset) (unpackLazyBS strBsValue)
     
     
 -- convert a IFD entry to an ExifField
 toExifField :: BL.ByteString -> GetWords -> IFDEntry -> ExifField
-toExifField bsExif words (IFDEntry tag format len offsetOrValue) = 
+toExifField bsExif words (IFDEntry tag format len offsetOrValue strValue) = 
     ExifField exifTag value
        where 
           exifTag = toExifTag tag
           value = case format of
              0x0002 -> getStringValue len offsetOrValue bsExif
-             0x0003 -> decodeTagValue exifTag offsetOrValue
-             0x0004 -> decodeTagValue exifTag offsetOrValue
+             0x0003 -> ppTagValue exifTag offsetOrValue
+             0x0004 -> ppTagValue exifTag offsetOrValue
              0x0005 -> getRationalValue exifTag offsetOrValue bsExif words
-             0x0007 -> (show len) ++ " bytes undefined data"
+             0x0007 -> ppUndefinedValue exifTag len strValue
              0x000A -> getRationalValue exifTag offsetOrValue bsExif words   -- signed rationale !!
              _      -> error $ "Format " ++ show format ++ " not yet implemented" 
  
@@ -155,8 +158,9 @@ getRationale words@(getWord16, getWord32) offset = do
 
 
 printRationalValue :: ExifTag -> (Int,Int) -> String
-printRationalValue TagExposureTime rat = fmtRatWithSlash rat ++ " sec."
-printRationalValue TagFNumber rat = "f/" ++ fmtRatFloat rat
+printRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
+printRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
+printRationalValue TagCompressedBitsPerPixel r = ' ' : (fmtRat r)
 printRationalValue _  rat = fmtRat rat
 
 
@@ -182,73 +186,146 @@ fmtRatFloat (num, denum) =
      show $ (((fromIntegral num)::Float) / ((fromIntegral denum):: Float))
 
 
+ppUndefinedValue :: ExifTag -> Int -> String -> String
+ppUndefinedValue TagExifVersion len value = ppExifValue value
+ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
+ppUndefinedValue _ len _ = (show len) ++ " bytes undefined data"
 
--- translate integer tag values to the corresponding ByteString value
-decodeTagValue :: ExifTag -> Int -> String
-decodeTagValue TagCompression n    = decodeCompression n
-decodeTagValue TagResolutionUnit n = decodeResolutionUnit n
-decodeTagValue TagOrientation n    = decodeOrientation n
-decodeTagValue TagYCbCrPositioning n = decodeYCbCrPositioning n
-decodeTagValue TagExposureProgram n = decodeTagExposureProgram n
-decodeTagValue TagSceneCaptureType n = decodeSceneCaptureType n
-decodeTagValue _ n = show n
+ppExifValue :: String -> String
+ppExifValue value = "Exif Version " ++ show (num/100)
+   where num = read value :: Float
 
--- interpretation of tag Resolution Unit
-decodeResolutionUnit :: Int -> String
-decodeResolutionUnit 1 = "No absolute unit"
-decodeResolutionUnit 2 = "Inch"
-decodeResolutionUnit 3 = "Centimeter"
-decodeResulutionUnit n = undef n
+ppComponentsConfiguration :: String -> String
+ppComponentsConfiguration conf = join " " $ map ppComps conf
+   where
+       ppComps (ord -> 0)  = "-"
+       ppComps (ord -> 1) = "Y"
+       ppComps (ord -> 2) = "Cb"
+       ppComps (ord -> 3) = "Cr"
+       ppComps (ord -> 4) = "R"
+       ppComps (ord -> 5) = "G"
+       ppComps (ord -> 6) = "B"
 
--- interpretation of tag Orientation 
-decodeOrientation :: Int -> String
-decodeOrientation 1 = "Top-left"
-decodeOrientation 2 = "Top-right" 
-decodeOrientation 3 = "Bottom-right"
-decodeOrientation 4 = "Bottom-left"
-decodeOrientation 5 = "Left-top"
-decodeOrientation 6 = "Right-top"
-decodeOrientation 7 = "Right-bottom"
-decodeOrientation 8 = "Left-bottom"
-decodeOrientation n = undef n
 
---interpretation of tag YCbCrPositioning
-decodeYCbCrPositioning :: Int -> String
-decodeYCbCrPositioning 1 = "Centered"
-decodeYCbCrPositioning 2 = "Co-sited"
-decodeYCbCrPositioning n = undef n
+ 
 
--- interpretation of tag Compression 
-decodeCompression :: Int -> String
-decodeCompression 1 = "No compression"
-decodeCompression 2 = "CCITT modified Huffman RLE"
-decodeCompression 3 = "CCITT Group 3 fax"
-decodeCompression 4 = "CCITT Group 4 fax"
-decodeCompression 5 = "LZW"
-decodeCompression 6 = "JPEG compression"
-decodeCompression 7 = "JPEG (new style)"
-decodeCompression n = undef n
 
--- interpretation of tag ExposureProgram
-decodeTagExposureProgram :: Int -> String
-decodeTagExposureProgram 0 = "Not defined"
-decodeTagExposureProgram 1 = "Manual"
-decodeTagExposureProgram 2 = "Normal program"
-decodeTagExposureProgram 3 = "Aperture priority"
-decodeTagExposureProgram 4 = "Shutter priority"
-decodeTagExposureProgram 5 = "Creative program" -- (biased toward depth of field)
-decodeTagExposureProgram 6 = "Action program"   -- (biased toward fast shutter speed)
-decodeTagExposureProgram 7 = "Portrait mode"    -- (for closeup photos with the background out of focus)
-decodeTagExposureProgram 8 = "Landscape mode"   -- (for landscape photos with the background in focus)
-decodeTagExposureProgram n = undef n
+-- pretty print integer tag values to the corresponding ByteString value
+ppTagValue :: ExifTag -> Int -> String
+ppTagValue TagCompression n    = ppCompression n
+ppTagValue TagResolutionUnit n = ppResolutionUnit n
+ppTagValue TagOrientation n    = ppOrientation n
+ppTagValue TagYCbCrPositioning n = ppYCbCrPositioning n
+ppTagValue TagExposureProgram n = ppTagExposureProgram n
+ppTagValue TagMeteringMode n = ppTagMeteringMode n
+ppTagValue TagLightSource n = ppTagLightSource n
+ppTagValue TagExposureMode n = ppTagExposureMode n
+ppTagValue TagWhiteBalance n = ppTagWhiteBalance n
+ppTagValue TagSceneCaptureType n = ppSceneCaptureType n
+ppTagValue _ n = show n
 
--- interpretation of tag SceneCaptureType
-decodeSceneCaptureType :: Int -> String
-decodeSceneCaptureType 0 = "Standard"
-decodeSceneCaptureType 1 = "Landscape"
-decodeSceneCaptureType 2 = "Portrait"
-decodeSceneCaptureType 3 = "Night scene"
-decodeSceneCaptureType n = undef n
+-- pretty print of tag Resolution Unit
+ppResolutionUnit :: Int -> String
+ppResolutionUnit 1 = "No absolute unit"
+ppResolutionUnit 2 = "Inch"
+ppResolutionUnit 3 = "Centimeter"
+ppResulutionUnit n = undef n
+
+-- pretty print of tag Orientation 
+ppOrientation :: Int -> String
+ppOrientation 1 = "Top-left"
+ppOrientation 2 = "Top-right" 
+ppOrientation 3 = "Bottom-right"
+ppOrientation 4 = "Bottom-left"
+ppOrientation 5 = "Left-top"
+ppOrientation 6 = "Right-top"
+ppOrientation 7 = "Right-bottom"
+ppOrientation 8 = "Left-bottom"
+ppOrientation n = undef n
+
+--pretty print of tag YCbCrPositioning
+ppYCbCrPositioning :: Int -> String
+ppYCbCrPositioning 1 = "Centered"
+ppYCbCrPositioning 2 = "Co-sited"
+ppYCbCrPositioning n = undef n
+
+-- pretty print of tag Compression 
+ppCompression :: Int -> String
+ppCompression 1 = "No compression"
+ppCompression 2 = "CCITT modified Huffman RLE"
+ppCompression 3 = "CCITT Group 3 fax"
+ppCompression 4 = "CCITT Group 4 fax"
+ppCompression 5 = "LZW"
+ppCompression 6 = "JPEG compression"
+ppCompression 7 = "JPEG (new style)"
+ppCompression n = undef n
+
+-- pretty print of tag ExposureProgram
+ppTagExposureProgram :: Int -> String
+ppTagExposureProgram 0 = "Not defined"
+ppTagExposureProgram 1 = "Manual"
+ppTagExposureProgram 2 = "Normal program"
+ppTagExposureProgram 3 = "Aperture priority"
+ppTagExposureProgram 4 = "Shutter priority"
+ppTagExposureProgram 5 = "Creative program" -- (biased toward depth of field)
+ppTagExposureProgram 6 = "Action program"   -- (biased toward fast shutter speed)
+ppTagExposureProgram 7 = "Portrait mode"    -- (for closeup photos with the background out of focus)
+ppTagExposureProgram 8 = "Landscape mode"   -- (for landscape photos with the background in focus)
+ppTagExposureProgram n = undef n
+
+
+ppTagMeteringMode :: Int -> String
+ppTagMeteringMode 0 = "Unknown"
+ppTagMeteringMode 1 = "Average"
+ppTagMeteringMode 2 = "CenterWeightedAverage"
+ppTagMeteringMode 3 = "Spot"
+ppTagMeteringMode 4 = "MultiSpot"
+ppTagMeteringMode 5 = "Pattern"
+ppTagMeteringMode 6 = "Partial"
+ppTagMeteringMode 255 = "other"
+ppTagMeteringMode n = undef n
+
+ppTagLightSource :: Int -> String
+ppTagLightSource 0 = "Unknown"
+ppTagLightSource 1 = "Daylight"
+ppTagLightSource 2 = "Fluorescent"
+ppTagLightSource 3 = "Tungsten (incandescent light)"
+ppTagLightSource 4 = "Flash"
+ppTagLightSource 9 = "Fine weather"
+ppTagLightSource 10 = "Cloudy weather"
+ppTagLightSource 11 = "Shade"
+ppTagLightSource 12 = "Daylight fluorescent (D 5700 - 7100K)"
+ppTagLightSource 13 = "Day white fluorescent (N 4600 - 5400K)"
+ppTagLightSource 14 = "Cool white fluorescent (W 3900 - 4500K)"
+ppTagLightSource 15 = "White fluorescent (WW 3200 - 3700K)"
+ppTagLightSource 17 = "Standard light A"
+ppTagLightSource 18 = "Standard light B"
+ppTagLightSource 19 = "Standard light C"
+ppTagLightSource 20 = "D55"
+ppTagLightSource 21 = "D65"
+ppTagLightSource 22 = "D75"
+ppTagLightSource 23 = "D50"
+ppTagLightSource 24 = "ISO studio tungsten"
+ppTagLightSource 255 = "Other light source"
+ppTagLightSource n = undef n
+
+ppTagExposureMode :: Int -> String
+ppTagExposureMode 0 = "Auto exposure"
+ppTagExposureMode 1 = "Manual exposure"
+ppTagExposureMode 2 = "Auto bracket"
+
+-- pretty print of tag WhiteBalance
+ppTagWhiteBalance :: Int -> String
+ppTagWhiteBalance 0 = "Auto white balance"
+ppTagWhiteBalance 1 = "Manual white balance"
+
+-- pretty print of tag SceneCaptureType
+ppSceneCaptureType :: Int -> String
+ppSceneCaptureType 0 = "Standard"
+ppSceneCaptureType 1 = "Landscape"
+ppSceneCaptureType 2 = "Portrait"
+ppSceneCaptureType 3 = "Night scene"
+ppSceneCaptureType n = undef n
 
 -- little support functions: normal pack/unpack are refused by GHC
 -- Hoogle says: unpack :: BL.ByteString -> String
