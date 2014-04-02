@@ -188,11 +188,15 @@ fmtRatFloat (num, denum) =
 
 ppUndefinedValue :: ExifTag -> Int -> String -> String
 ppUndefinedValue TagExifVersion len value = ppExifValue value
+ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
 ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
 ppUndefinedValue _ len _ = (show len) ++ " bytes undefined data"
 
 ppExifValue :: String -> String
 ppExifValue value = "Exif Version " ++ show (num/100)
+   where num = read value :: Float
+
+ppFlashPixVersion value = "FlashPix Version " ++ show (num/100)
    where num = read value :: Float
 
 ppComponentsConfiguration :: String -> String
@@ -219,6 +223,9 @@ ppTagValue TagYCbCrPositioning n = ppYCbCrPositioning n
 ppTagValue TagExposureProgram n = ppTagExposureProgram n
 ppTagValue TagMeteringMode n = ppTagMeteringMode n
 ppTagValue TagLightSource n = ppTagLightSource n
+ppTagValue TagFlash n = ppTagFlash n
+ppTagValue TagColorSpace n = ppTagColorSpace n
+ppTagValue TagCustomRendered n = ppCustomRendered n
 ppTagValue TagExposureMode n = ppTagExposureMode n
 ppTagValue TagWhiteBalance n = ppTagWhiteBalance n
 ppTagValue TagSceneCaptureType n = ppSceneCaptureType n
@@ -308,6 +315,41 @@ ppTagLightSource 23 = "D50"
 ppTagLightSource 24 = "ISO studio tungsten"
 ppTagLightSource 255 = "Other light source"
 ppTagLightSource n = undef n
+
+
+ppTagFlash :: Int -> String
+ppTagFlash 0x0000 = "Flash did not fire"
+ppTagFlash 0x0001 = "Flash fired"
+ppTagFlash 0x0005 = "Strobe return light not detected"
+ppTagFlash 0x0007 = "Strobe return light detected"
+ppTagFlash 0x0009 = "Flash fired, compulsory flash mode"
+ppTagFlash 0x000D = "Flash fired, compulsory flash mode, return light not detected"
+ppTagFlash 0x000F = "Flash fired, compulsory flash mode, return light detected"
+ppTagFlash 0x0010 = "Flash did not fire, compulsory flash mode"
+ppTagFlash 0x0018 = "Flash did not fire, auto mode"
+ppTagFlash 0x0019 = "Flash fired, auto mode"
+ppTagFlash 0x001D = "Flash fired, auto mode, return light not detected"
+ppTagFlash 0x001F = "Flash fired, auto mode, return light detected"
+ppTagFlash 0x0020 = "No flash function"
+ppTagFlash 0x0041 = "Flash fired, red-eye reduction mode"
+ppTagFlash 0x0045 = "Flash fired, red-eye reduction mode, return light not detected"
+ppTagFlash 0x0047 = "Flash fired, red-eye reduction mode, return light detected"
+ppTagFlash 0x0049 = "Flash fired, compulsory flash mode, red-eye reduction mode"
+ppTagFlash 0x004D = "Flash fired, compulsory flash mode, red-eye reduction mode, return light not detected"
+ppTagFlash 0x004F = "Flash fired, compulsory flash mode, red-eye reduction mode, return light detected"
+ppTagFlash 0x0059 = "Flash fired, auto mode, red-eye reduction mode"
+ppTagFlash 0x005D = "Flash fired, auto mode, return light not detected, red-eye reduction mode"
+ppTagFlash 0x005F = "Flash fired, auto mode, return light detected, red-eye reduction mode"
+ppTagFlash n = undef n
+
+ppTagColorSpace :: Int -> String
+ppTagColorSpace 1 = "sRGB"
+ppTagColorSpace 65535 = "Uncalibrated"
+ppTagColorSpace n = undef n 
+
+ppCustomRendered :: Int -> String
+ppCustomRendered 0 = "Normal process"
+ppCustomRendered 1 = "Custom process"
 
 ppTagExposureMode :: Int -> String
 ppTagExposureMode 0 = "Auto exposure"
