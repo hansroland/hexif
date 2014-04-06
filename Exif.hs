@@ -42,7 +42,7 @@ data Exif = Exif
     } deriving (Eq, Show)
 
 
-data IFDEntry = IFDEntry
+data IFDFileEntry = IFDFileEntry
     { tag :: Word16             -- 2 Bytes
     , format :: Word16       	-- 2 Bytes
     , components :: Int   		-- 4 Bytes
@@ -74,16 +74,19 @@ getExif input = do
     nOffset <- snd getWords
     blocks <- getIFDBlocks nOffset getWords
     let entries = concat blocks
+
     let (usefuls, pointers) = partition (\e -> tag e /= 0x8769) entries
-    let tags = map (toExifField input getWords) usefuls
+    
     additional <- if (length pointers > 0)
         then getIFDBlocks (fromIntegral $ offsetOrValue $ head pointers)  getWords
         else return []
-    return $ map (toExifField input getWords) (usefuls ++ concat additional)
+
+    let allEntries = (usefuls ++ concat additional)
+    return $ map (toExifField input getWords) allEntries
  
 
--- read IFD blocks
-getIFDBlocks :: Word32 -> GetWords -> Get [[IFDEntry]]
+-- read chained IFD blocks
+getIFDBlocks :: Word32 -> GetWords -> Get [[IFDFileEntry]]
 getIFDBlocks nOffset getWords@(getWord16, getWord32) = do
     if nOffset == 0
         then return []
@@ -91,37 +94,36 @@ getIFDBlocks nOffset getWords@(getWord16, getWord32) = do
            pos <- bytesRead
            skip $ (fromIntegral nOffset) - (fromIntegral pos)
            nEntries <- getWord16
-           block <- getIFDEntries (fromIntegral nEntries) getWords
+           block <- getIFDBlock (fromIntegral nEntries) getWords
            next <- getWord32
            blocks <- getIFDBlocks next getWords
            return $ block : blocks
 
 -- read a single IFD block. It contains n IFD entries. 
-getIFDEntries :: Int -> GetWords -> Get [IFDEntry]
-getIFDEntries n getWords =
+getIFDBlock :: Int -> GetWords -> Get [IFDFileEntry]
+getIFDBlock n getWords =
     if n == 0 
         then return []
         else do
-           entry <- getIFDEntry getWords
-           entries <- getIFDEntries (n - 1) getWords
+           entry <- getIFDFileEntry getWords
+           entries <- getIFDBlock (n - 1) getWords
            return $ entry : entries
 
-
 -- read a single IFD entry
-getIFDEntry ::  GetWords -> Get IFDEntry
-getIFDEntry (getWord16, getWord32)  = do
+getIFDFileEntry ::  GetWords -> Get IFDFileEntry
+getIFDFileEntry (getWord16, getWord32)  = do
     tagNr <- getWord16
     format <- getWord16
     comps <- getWord32
     strBsValue <- getLazyByteString 4
     let offset = runGet getWord32 strBsValue
     -- offset <- getWord32
-    return $ IFDEntry tagNr format (fromIntegral comps) (fromIntegral offset) (unpackLazyBS strBsValue)
+    return $ IFDFileEntry tagNr format (fromIntegral comps) (fromIntegral offset) (unpackLazyBS strBsValue)
     
     
 -- convert a IFD entry to an ExifField
-toExifField :: BL.ByteString -> GetWords -> IFDEntry -> ExifField
-toExifField bsExif words (IFDEntry tag format len offsetOrValue strValue) = 
+toExifField :: BL.ByteString -> GetWords -> IFDFileEntry -> ExifField
+toExifField bsExif words (IFDFileEntry tag format len offsetOrValue strValue) = 
     ExifField exifTag value
        where 
           exifTag = toExifTag tag
@@ -190,6 +192,8 @@ ppUndefinedValue :: ExifTag -> Int -> String -> String
 ppUndefinedValue TagExifVersion len value = ppExifValue value
 ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
 ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
+ppUndefinedValue TagFileSource len value = ppFileSource value
+ppUndefinedValue TagSceneType len value = ppScreenType value
 ppUndefinedValue _ len _ = (show len) ++ " bytes undefined data"
 
 ppExifValue :: String -> String
@@ -211,9 +215,19 @@ ppComponentsConfiguration conf = join " " $ map ppComps conf
        ppComps (ord -> 6) = "B"
 
 
- 
+ppFileSource :: String -> String
+ppFileSource value = 
+      if head value == chr 3 
+      then "DSC" 
+      else "(unknown)"
 
-
+ppScreenType :: String -> String
+ppScreenType value = 
+      if head value == chr 1 
+      then "Directly photographed" 
+      else "(unknown)"
+   
+       
 -- pretty print integer tag values to the corresponding ByteString value
 ppTagValue :: ExifTag -> Int -> String
 ppTagValue TagCompression n    = ppCompression n
@@ -409,7 +423,7 @@ data ExifTag = TagCompression
              | TagFlash
              | TagFocalLength
              | TagMakerNote
-             | TagFlashpixVersion
+             | TagFlashPixVersion
              | TagColorSpace
              | TagPixelXDimension
              | TagPixelYDimension
@@ -454,7 +468,7 @@ toExifTag t
    | t == 0x9209 = TagFlash
    | t == 0x920a = TagFocalLength
    | t == 0x927c = TagMakerNote
-   | t == 0xa000 = TagFlashpixVersion
+   | t == 0xa000 = TagFlashPixVersion
    | t == 0xa001 = TagColorSpace
    | t == 0xa002 = TagPixelXDimension
    | t == 0xa003 = TagPixelYDimension
