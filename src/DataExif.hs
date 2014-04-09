@@ -9,18 +9,22 @@
 module DataExif where
 
 import Data.Binary
+import qualified Data.ByteString.Lazy as BL
 
 
--- Definiton of the resutlting output
+data Exif = Exif [IFDDir]
+
+-- Definiton of the resulting output
 data ExifField = ExifField
     { exifTag :: ExifTag
     , value :: String 
     } deriving (Eq)
 
 -- Definition of a logical IFD Entry
-data IFDEntry = IFDRat ExifTag Int Int
+data IFDEntry = IFDRat ExifTag (Int, Int)
               | IFDNum ExifTag Int
               | IFDStr ExifTag String
+              | IFDUdf ExifTag Int String
               | IFDSub ExifTag IFDDir
 
 -- Definition of a Tag
@@ -30,17 +34,18 @@ data DirTag = IFDMain
          | IFDInterop
 
 
-data IFDFileDir = IFDFileDir DirTag [IFDFileEntry]
+type GetWords = (Get Word16, Get Word32)
+
+data IFDFileDir = IFDFileDir DirTag GetWords [IFDFileEntry] 
 
 data IFDDir = IFDDir DirTag [IFDEntry]
 
 -- Definiton of physical IFD Entry in the file
 data IFDFileEntry = IFDFileEntry
-    { tag :: Word16             -- 2 Bytes
-    , format :: Word16       	-- 2 Bytes
-    , components :: Int   		-- 4 Bytes
-    , offsetOrValue :: Int		-- 4 Bytes
-    , strValue :: String
+    { tag :: Word16                     -- 2 Bytes
+    , format :: Word16       	        -- 2 Bytes
+    , components :: Int   		        -- 4 Bytes
+    , strValue :: BL.ByteString         -- 4 Bytes
     } deriving (Eq, Show)
 
 
