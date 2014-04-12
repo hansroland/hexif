@@ -11,29 +11,26 @@ module DataExif where
 import Data.Binary
 import qualified Data.ByteString.Lazy as BL
 
-
-data Exif = Exif [IFDDir]
+data Exif = Exif [IFDDir] GetWords
 
 -- Definiton of the resulting output
 data ExifField = ExifField
     { exifTag :: ExifTag
     , value :: String 
     } deriving (Eq)
+
 instance Show ExifField where
     show f = drop 3 (show $ exifTag f) ++ " -> " ++ (value f)
 
 
-
-data IFDDir = IFDDir [IFDEntry]
-
+type IFDDir = [IFDEntry]
 
 -- Definition of a logical IFD Entry
 data IFDEntry = IFDRat ExifTag (Int, Int)
               | IFDNum ExifTag Int
               | IFDStr ExifTag String
               | IFDUdf ExifTag Int String
-              | IFDSub DirTag Int
-              -- | IFDSub DirTag IFDDir
+              | IFDSub DirTag IFDDir
 
 -- Definition of a DirTag
 data DirTag = IFDMain
@@ -44,10 +41,8 @@ data DirTag = IFDMain
 
 type GetWords = (Get Word16, Get Word32)
 
-data IFDFileDir = IFDFileDir GetWords [IFDFileEntry] 
+type IFDFileDir = [IFDFileEntry]
      
-instance Show IFDFileDir where
-     show (IFDFileDir getWords fs) = show fs
 
 -- Definiton of physical IFD Entry in the file
 data IFDFileEntry = IFDFileEntry
@@ -57,9 +52,10 @@ data IFDFileEntry = IFDFileEntry
     , strValue :: BL.ByteString         -- 4 Bytes
     } deriving (Eq, Show)
 
-
 -- Definition of all the supported Exif tags
-data ExifTag = TagCompression
+data ExifTag = TagInteroperabilityIndex
+             | TagInteroperabilityVersion
+             | TagCompression
              | TagImageDescription
              | TagModel
              | TagMake

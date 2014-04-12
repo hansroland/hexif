@@ -15,7 +15,13 @@ import Data.Char (chr, ord)
 import Data.String.Utils(join)
 
 prettyPrint :: IFDDir -> [ExifField]
-prettyPrint (IFDDir entries) = map ppIFDEntry entries
+prettyPrint entries = map ppIFDEntry (flatten entries)
+
+-- Note: suDirs will always be printed at the end
+flatten :: IFDDir -> [IFDEntry]
+flatten [] = []
+flatten ((IFDSub tag ifdDir) : ds) = flatten ds ++ flatten ifdDir
+flatten (d : ds) = d : flatten ds
 
 ppIFDEntry :: IFDEntry -> ExifField 
 ppIFDEntry (IFDRat tag numdenom) = ExifField tag (ppRationalValue tag numdenom)
@@ -47,8 +53,6 @@ fmtRat r@(num, denum) =
 fmtRatInt :: (Int, Int) -> String
 fmtRatInt (num, denum) = show $ div num denum
 
-
-
 fmtRatFloat :: (Int, Int) -> String
 fmtRatFloat (num, denum) =
      show ((fromIntegral num::Float) / (fromIntegral denum:: Float))
@@ -62,11 +66,14 @@ ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
 ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
 ppUndefinedValue TagFileSource len value = ppFileSource value
 ppUndefinedValue TagSceneType len value = ppScreenType value
+ppUndefinedValue TagInteroperabilityVersion len value = value
 ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 
 ppExifValue :: String -> String
-ppExifValue value = "Exif Version " ++ show (num/100)
-   where num = read value :: Float
+ppExifValue value = "Exif Version " ++ show value
+-- ppExifValue value = "Exif Version " ++ show (num/100)
+--   where num = read value :: Float
+
 
 ppFlashPixVersion value = "FlashPix Version " ++ show (num/100)
    where num = read value :: Float
