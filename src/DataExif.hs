@@ -19,26 +19,35 @@ data ExifField = ExifField
     { exifTag :: ExifTag
     , value :: String 
     } deriving (Eq)
+instance Show ExifField where
+    show f = drop 3 (show $ exifTag f) ++ " -> " ++ (value f)
+
+
+
+data IFDDir = IFDDir [IFDEntry]
+
 
 -- Definition of a logical IFD Entry
 data IFDEntry = IFDRat ExifTag (Int, Int)
               | IFDNum ExifTag Int
               | IFDStr ExifTag String
               | IFDUdf ExifTag Int String
-              | IFDSub ExifTag IFDDir
+              | IFDSub DirTag Int
+              -- | IFDSub DirTag IFDDir
 
--- Definition of a Tag
+-- Definition of a DirTag
 data DirTag = IFDMain
          | IFDExif
          | IFDGPS
          | IFDInterop
-
+     deriving (Eq, Show)
 
 type GetWords = (Get Word16, Get Word32)
 
-data IFDFileDir = IFDFileDir DirTag GetWords [IFDFileEntry] 
-
-data IFDDir = IFDDir DirTag [IFDEntry]
+data IFDFileDir = IFDFileDir GetWords [IFDFileEntry] 
+     
+instance Show IFDFileDir where
+     show (IFDFileDir getWords fs) = show fs
 
 -- Definiton of physical IFD Entry in the file
 data IFDFileEntry = IFDFileEntry

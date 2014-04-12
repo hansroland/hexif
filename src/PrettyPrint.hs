@@ -14,13 +14,15 @@ import DataExif
 import Data.Char (chr, ord)
 import Data.String.Utils(join)
 
+prettyPrint :: IFDDir -> [ExifField]
+prettyPrint (IFDDir entries) = map ppIFDEntry entries
 
-prettyPrint :: IFDEntry -> ExifField 
-prettyPrint (IFDRat tag numdenom) = ExifField tag (ppRationalValue tag numdenom)
-prettyPrint (IFDNum tag nVal) = ExifField tag (ppNumValue tag nVal)
-prettyPrint (IFDStr tag strVal) = ExifField tag strVal
-prettyPrint (IFDUdf tag len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
-prettyPrint (IFDSub tag ifdDir) = error $ "Directory encountered " ++ show tag
+ppIFDEntry :: IFDEntry -> ExifField 
+ppIFDEntry (IFDRat tag numdenom) = ExifField tag (ppRationalValue tag numdenom)
+ppIFDEntry (IFDNum tag nVal) = ExifField tag (ppNumValue tag nVal)
+ppIFDEntry (IFDStr tag strVal) = ExifField tag strVal
+ppIFDEntry (IFDUdf tag len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
+ppIFDEntry (IFDSub tag ifdDir) = error $ "Directory encountered " ++ show tag
 
 -- ----------------------------------------------------------------------------
 -- Pretty Printers for RationalValues
@@ -28,13 +30,13 @@ prettyPrint (IFDSub tag ifdDir) = error $ "Directory encountered " ++ show tag
 ppRationalValue :: ExifTag -> (Int,Int) -> String
 ppRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
 ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
-ppRationalValue TagCompressedBitsPerPixel r = ' ' : (fmtRat r)
+ppRationalValue TagCompressedBitsPerPixel r = ' ' : fmtRat r
 ppRationalValue _  rat = fmtRat rat
 
 -- format a rational number with a slash
 fmtRatWithSlash :: (Int, Int) -> String
 fmtRatWithSlash (num,denum) =
-    (show $ div num ggt) ++ "/" ++ (show $ div denum ggt)
+    show (div num ggt) ++ "/" ++ show (div denum ggt)
     where ggt = gcd num denum
 
 fmtRat :: (Int, Int) -> String
@@ -49,7 +51,7 @@ fmtRatInt (num, denum) = show $ div num denum
 
 fmtRatFloat :: (Int, Int) -> String
 fmtRatFloat (num, denum) =
-     show $ (((fromIntegral num)::Float) / ((fromIntegral denum):: Float))
+     show ((fromIntegral num::Float) / (fromIntegral denum:: Float))
 
 -- ----------------------------------------------------------------------------
 -- Pretty Printers for Undefined Values
@@ -60,7 +62,7 @@ ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
 ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
 ppUndefinedValue TagFileSource len value = ppFileSource value
 ppUndefinedValue TagSceneType len value = ppScreenType value
-ppUndefinedValue _ len _ = (show len) ++ " bytes undefined data"
+ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 
 ppExifValue :: String -> String
 ppExifValue value = "Exif Version " ++ show (num/100)
@@ -110,6 +112,7 @@ ppNumValue TagCustomRendered n = ppCustomRendered n
 ppNumValue TagExposureMode n = ppTagExposureMode n
 ppNumValue TagWhiteBalance n = ppTagWhiteBalance n
 ppNumValue TagSceneCaptureType n = ppSceneCaptureType n
+ppNumValue _ n = show n
 
 -- pretty print of tag Resolution Unit
 ppResolutionUnit :: Int -> String
@@ -250,4 +253,4 @@ ppSceneCaptureType 3 = "Night scene"
 ppSceneCaptureType n = undef n
 
 undef :: Int -> String
-undef n = "undefined " ++  (show n)
+undef n = "undefined " ++  show n
