@@ -10,9 +10,10 @@
 module PrettyPrint (prettyPrint) where
 
 import DataExif
+import Utils
 
 import Data.Char (chr, ord)
-import Data.String.Utils(join)
+-- import Data.String.Utils(join)
 
 prettyPrint :: IFDDir -> [ExifField]
 prettyPrint entries = map ppIFDEntry (flatten entries)
