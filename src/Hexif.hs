@@ -32,10 +32,9 @@ allTags exif = prettyPrint $ concat $ dirs exif
 fromFile :: FilePath -> IO Exif
 fromFile fn = do
    inp <- BL.readFile fn
-   let input = BL.drop 6 inp
-   return $ readExif input 
+   return $ readExif inp 
 
--- 
+-- Little getter function to extract the directories from an Exif value
 dirs :: Exif -> [IFDDir]
 dirs (Exif dirs _) = dirs
 

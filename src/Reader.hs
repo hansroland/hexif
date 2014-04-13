@@ -17,10 +17,11 @@ import qualified Data.ByteString.Lazy as BL
 type Offset = Int
 
 -- read in an Exif file.
--- The ByteString parameter starts after the EXIF__ constant
+-- The ByteString parameter starts with the EXIF__ constant
 readExif :: BL.ByteString -> Exif
-readExif bsExif = Exif mainDirs getWords 
+readExif bsExif6 = Exif mainDirs getWords 
     where 
+      bsExif = BL.drop 6 bsExif6
       mainDirs = map (convertDir bsExif getWords) mainFileDirs
       mainFileDirs = readIFDFileDirs offset getWords bsExif
       (getWords, offset) = readHeader bsExif
