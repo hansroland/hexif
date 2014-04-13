@@ -4,12 +4,21 @@
 --
 -- Public functions for the hexif project
 --
+-- Read (and maybe later rewrite) the exif file of a JPEG image with 
+--     native Haskell code
+--
+-- See: 
+--    http://www.media.mit.edu/pia/Research/deepview/exif.html
+--    http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html   
+--
+--    
+--
 -- -----------------------------------------------------------------------------
-
 module Hexif 
   where
 
 import DataExif
+import Jpeg
 import Reader
 import PrettyPrint
 

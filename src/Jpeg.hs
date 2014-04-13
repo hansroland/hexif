@@ -1,7 +1,11 @@
 -- ----------------------------------------------------------------------------
 -- ReadJpeg - Read a jpeg file and split it into segments
 -- ----------------------------------------------------------------------------
-module Jpeg where
+module Jpeg 
+  ( Jpeg
+  , readJpegFromFile
+  , extractExif
+) where
 
 import Data.Binary
 import Data.Binary.Get   {-( Get
@@ -12,13 +16,13 @@ import Data.Binary.Get   {-( Get
                       , bytesRead
                       )   -}
 -- import Data.Binary.Put
-import Control.Monad
+-- import Control.Monad
 import System.IO
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString as B
+-- import qualified Data.ByteString as B
 
-import Hexdump (prettyHex)
-import Numeric (showHex)
+-- import Hexdump (prettyHex)
+-- import Numeric (showHex)
 
 -- -----------------------------------------------------------------------------------
 -- Data Types and simple instances
@@ -27,29 +31,40 @@ data Jpeg = Jpeg
     { segments :: [JpegSegment]
  -- , imageData :: B.ByteString      -- later needed for write version
     } 
-    deriving (Eq, Show)
+    deriving Eq
 
 data JpegSegment = JpegSegment
     { segMarker :: Int 
     , segLen :: Int
-    , segData :: B.ByteString 
+    , segData :: BL.ByteString 
     , offset :: Integer              -- for debugging only
     }
     deriving (Eq)
 
+{-
 instance Show JpegSegment 
   where
     show = showSegment
-
 
 showSegment :: JpegSegment -> String
 showSegment seg =
    "JpegSegment: Marker = " ++ showHex (segMarker seg)  "" ++ " len: " ++ show (segLen seg) ++ 
    " offset = " ++ show (offset seg) ++
    " data   = " ++ prettyHex (B.take 32 $segData seg)
-
+-}
   
--- Read a Jpeg value form a ByteSring  
+-- Read a Jpeg value from a file
+readJpegFromFile :: String -> IO Jpeg
+readJpegFromFile fn = do
+   bsJpeg <- BL.readFile fn
+   return $ readJpeg bsJpeg
+
+
+-- Extract Exif segment
+extractExif :: Jpeg -> BL.ByteString
+extractExif jpeg = segData $ head (filter (\seg -> segMarker seg == 0xFFE1) (segments jpeg))
+
+-- Read a Jpeg value form a ByteString  
 readJpeg :: BL.ByteString -> Jpeg
 readJpeg bytes = runGet getJpeg bytes
   where   
@@ -75,16 +90,15 @@ getSegment = do
      marker <- getWord16be
      offset <- bytesRead
      len <- getWord16be 
-     segData <- getByteString (fromIntegral len - 2)
+     segData <- getLazyByteString (fromIntegral len - 2)
      return $ JpegSegment (fromIntegral marker) (fromIntegral len) segData (fromIntegral offset - 2)
 
-
+{-
 example3 :: IO()
 example3 = do
     input <- BL.readFile "JG1111.jpg"
     print $ readJpeg input
 
-{-
 example4 :: IO()
 example4 = do
     input <- BL.readFile "JG1111.jpg"
