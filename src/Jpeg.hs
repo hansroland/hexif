@@ -1,6 +1,8 @@
 -- ----------------------------------------------------------------------------
 -- ReadJpeg - Read a jpeg file and split it into segments
 -- ----------------------------------------------------------------------------
+module Jpeg where
+
 import Data.Binary
 import Data.Binary.Get   {-( Get
                       , getWord8
@@ -45,19 +47,19 @@ showSegment seg =
    "JpegSegment: Marker = " ++ showHex (segMarker seg)  "" ++ " len: " ++ show (segLen seg) ++ 
    " offset = " ++ show (offset seg) ++
    " data   = " ++ prettyHex (B.take 32 $segData seg)
-  
-  
--- read the next segment
-getSegment :: Get JpegSegment
-getSegment = do
-     marker <- getWord16be
-     offset <- bytesRead
-     len <- getWord16be 
-     segData <- getByteString (fromIntegral len - 2)
-     return $ JpegSegment (fromIntegral marker) (fromIntegral len) segData (fromIntegral offset - 2)
 
+  
+-- Read a Jpeg value form a ByteSring  
+readJpeg :: BL.ByteString -> Jpeg
+readJpeg bytes = runGet getJpeg bytes
+  where   
+    getJpeg :: Get Jpeg
+    getJpeg = do
+        jpegStart <- getWord16be
+        segs <- getSegments 
+        return $ Jpeg segs 
 
--- read all the segments
+-- get all the segments
 getSegments :: Get [JpegSegment]
 getSegments = do
     seg <- getSegment
@@ -67,17 +69,14 @@ getSegments = do
           segs <- getSegments
           return $ seg : segs
 
-
--- get a Jpeg value form a ByteSring         
-getJpeg :: Get Jpeg
-getJpeg = do
-    jpegStart <- getWord16be
-    segs <- getSegments 
-    return $ Jpeg segs 
-
-readJpeg :: BL.ByteString -> Jpeg
-readJpeg bytes =
-    runGet getJpeg bytes
+-- get the next segment
+getSegment :: Get JpegSegment
+getSegment = do
+     marker <- getWord16be
+     offset <- bytesRead
+     len <- getWord16be 
+     segData <- getByteString (fromIntegral len - 2)
+     return $ JpegSegment (fromIntegral marker) (fromIntegral len) segData (fromIntegral offset - 2)
 
 
 example3 :: IO()
