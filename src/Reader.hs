@@ -39,41 +39,40 @@ readHeader = runGet getHeader
         offset <- fst getWords
         return (getWords, fromIntegral offset)
 
-
 -- read chained FileDirs from a given offset
 readIFDFileDirs :: Offset -> GetWords -> BL.ByteString -> [IFDFileDir]
-readIFDFileDirs offset getWords = runGet (getIFDBlocks offset getWords)
+readIFDFileDirs offset getWords bsExif = 
+  if offset == 0
+     then []
+     else block : blocks
   where
-    getIFDFileDirs :: Offset -> GetWords -> Get [IFDFileDir]
-    getIFDFileDirs offset getWords@(getWord16, getWord32) = do
-        skip offset
-        count <- getWord16
-        getIFDBlocks (fromIntegral count) getWords
+    (next, block) = readIFDFileDir offset getWords bsExif
+    blocks = readIFDFileDirs next getWords bsExif
+    
 
--- read chained IFD blocks
-getIFDBlocks :: Int -> GetWords -> Get [IFDFileDir]
-getIFDBlocks nOffset getWords@(getWord16, getWord32) = do
-    if nOffset == 0
-        then return []
-        else do 
+
+-- read a single IFD File Directory from a given offset
+readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
+readIFDFileDir offset getWords = runGet (getIFDBlock offset getWords) 
+
+
+-- read IFD block and its next pointer
+getIFDBlock :: Int -> GetWords -> Get (Offset, IFDFileDir)
+getIFDBlock nOffset getWords@(getWord16, getWord32) = do
            skip nOffset
-           -- pos <- bytesRead
-           -- skip $  nOffset - (fromIntegral pos)
            nEntries <- getWord16
-           block <- getIFDBlock (fromIntegral nEntries) getWords
-           -- next <- getWord32
-           -- blocks <- getIFDBlocks (fromIntegral next) getWords
-           -- return $ block : blocks
-           return [block]
+           block <- getIFDFileDir (fromIntegral nEntries) getWords
+           next <- getWord32
+           return (fromIntegral next, block)
 
 -- read a single IFD block. It contains n IFD entries. 
-getIFDBlock :: Int -> GetWords -> Get IFDFileDir
-getIFDBlock count getWords =
+getIFDFileDir :: Int -> GetWords -> Get IFDFileDir
+getIFDFileDir count getWords =
     if count == 0 
         then return []
         else do
            entry <- getIFDFileEntry getWords
-           entries <- getIFDBlock (count - 1) getWords
+           entries <- getIFDFileDir (count - 1) getWords
            return $ entry : entries
 
 -- read a single IFD file entry
