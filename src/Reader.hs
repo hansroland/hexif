@@ -16,14 +16,16 @@ import qualified Data.ByteString.Lazy as BL
 
 type Offset = Int
 
+-- read in an Exif file.
+-- The ByteString parameter starts after the EXIF__ constant
 readExif :: BL.ByteString -> Exif
-readExif input = Exif mainDirs getWords 
+readExif bsExif = Exif mainDirs getWords 
     where 
-      mainDirs = map (convertDir input getWords) mainFileDirs
-      mainFileDirs = readIFDFileDirs offset getWords input
-      (getWords, offset) = readHeader input
+      mainDirs = map (convertDir bsExif getWords) mainFileDirs
+      mainFileDirs = readIFDFileDirs offset getWords bsExif
+      (getWords, offset) = readHeader bsExif
 
--- Read the header data from an EXIF file 
+-- Read the header data from a ByteString representing an EXIF file 
 readHeader :: BL.ByteString -> (GetWords, Offset)
 readHeader = runGet getHeader
   where 
@@ -49,33 +51,31 @@ readIFDFileDirs offset getWords bsExif =
     (next, block) = readIFDFileDir offset getWords bsExif
     blocks = readIFDFileDirs next getWords bsExif
     
-
-
 -- read a single IFD File Directory from a given offset
 readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
-readIFDFileDir offset getWords = runGet (getIFDBlock offset getWords) 
+readIFDFileDir offset getWords = runGet (getIFDFileDir offset getWords) 
 
 
--- read IFD block and its next pointer
-getIFDBlock :: Int -> GetWords -> Get (Offset, IFDFileDir)
-getIFDBlock nOffset getWords@(getWord16, getWord32) = do
+-- get IFD directory and the offset pointing to the next chained IFD 
+getIFDFileDir :: Int -> GetWords -> Get (Offset, IFDFileDir)
+getIFDFileDir nOffset getWords@(getWord16, getWord32) = do
            skip nOffset
            nEntries <- getWord16
-           block <- getIFDFileDir (fromIntegral nEntries) getWords
+           block <- getIFDFileDirEntries (fromIntegral nEntries) getWords
            next <- getWord32
            return (fromIntegral next, block)
 
--- read a single IFD block. It contains n IFD entries. 
-getIFDFileDir :: Int -> GetWords -> Get IFDFileDir
-getIFDFileDir count getWords =
+-- Get all the entries of an IFD File Dir
+getIFDFileDirEntries :: Int -> GetWords -> Get IFDFileDir
+getIFDFileDirEntries count getWords =
     if count == 0 
         then return []
         else do
            entry <- getIFDFileEntry getWords
-           entries <- getIFDFileDir (count - 1) getWords
+           entries <- getIFDFileDirEntries (count - 1) getWords
            return $ entry : entries
 
--- read a single IFD file entry
+-- Get a single IFD file entry
 getIFDFileEntry ::  GetWords -> Get IFDFileEntry
 getIFDFileEntry (getWord16, getWord32)  = do
     tagNr <- getWord16
@@ -98,6 +98,7 @@ convertEntry bsExif getWords  fileEntry@(IFDFileEntry tag format len strBsValue)
        Nothing     -> convertStdEntry bsExif getWords fileEntry
    where toTag = toDirTag tag 
 
+-- a sub entry contains a new IFD File directory
 convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
 convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub  dirTag subDir
     where 
@@ -105,6 +106,7 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
       fileDir = concat $ readIFDFileDirs offset getWords bsExif
       offset = fromIntegral (runGet getWord32 strBsValue)
 
+-- a standard entry represents a single tag and its value
 convertStdEntry :: BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
 convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
@@ -126,7 +128,9 @@ convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len
       -- 0x0007 = undefined
       -- 0x000A = signed rationale
 
--- subfunctions of convert   
+-- subfunctions of convert  
+
+-- read out a string value 
 -- Note: TagInteroperabilityIndex has a non standard representation
 stringValue :: Word16 -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
 stringValue  1  len strBsValue _  _       = unpackLazyBS strBsValue
