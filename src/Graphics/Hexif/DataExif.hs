@@ -6,7 +6,7 @@
 -- 
 -- -----------------------------------------------------------------------------
 
-module DataExif where
+module Graphics.Hexif.DataExif where
 
 import Data.Binary
 import qualified Data.ByteString.Lazy as BL

@@ -7,10 +7,10 @@
 --
 -- -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns #-}
-module PrettyPrint (prettyPrint) where
+module Graphics.Hexif.PrettyPrint (prettyPrint) where
 
-import DataExif
-import Utils
+import Graphics.Hexif.DataExif
+import Graphics.Hexif.Utils
 
 import Data.Char (chr, ord)
 -- import Data.String.Utils(join)

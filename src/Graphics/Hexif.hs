@@ -14,13 +14,13 @@
 --    
 --
 -- -----------------------------------------------------------------------------
-module Hexif 
+module Graphics.Hexif 
   where
 
-import DataExif
-import Jpeg
-import Reader
-import PrettyPrint
+import Graphics.Hexif.DataExif
+import Graphics.Hexif.Jpeg
+import Graphics.Hexif.Reader
+import Graphics.Hexif.PrettyPrint
 
 import qualified Data.ByteString.Lazy as BL
 

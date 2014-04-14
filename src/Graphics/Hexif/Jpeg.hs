@@ -1,7 +1,7 @@
 -- ----------------------------------------------------------------------------
 -- ReadJpeg - Read a jpeg file and split it into segments
 -- ----------------------------------------------------------------------------
-module Jpeg 
+module Graphics.Hexif.Jpeg 
   ( Jpeg
   , readJpegFromFile
   , extractExif

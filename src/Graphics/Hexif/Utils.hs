@@ -2,7 +2,7 @@
 -- Utils.hs  Little support functions for the hexif project
 -- -----------------------------------------------------------------------------
 
-module Utils where
+module Graphics.Hexif.Utils where
 
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (chr)

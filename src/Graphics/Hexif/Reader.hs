@@ -2,10 +2,10 @@
 -- Reader.hs Functions to read in an Exif structure
 -- -----------------------------------------------------------------------------
 
-module Reader where
+module Graphics.Hexif.Reader where
 
-import DataExif
-import Utils
+import Graphics.Hexif.DataExif
+import Graphics.Hexif.Utils
 
 import Data.Char (chr)
 import Data.List (partition)
