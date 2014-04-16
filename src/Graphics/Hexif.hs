@@ -23,6 +23,7 @@ import Graphics.Hexif.Reader
 import Graphics.Hexif.PrettyPrint
 
 import qualified Data.ByteString.Lazy as BL
+import System.FilePath
 
 -- Return a list of all ExifFields
 allTags :: Exif -> [ExifField]
@@ -37,4 +38,12 @@ fromFile fn = do
 -- Little getter function to extract the directories from an Exif value
 dirs :: Exif -> [IFDDir]
 dirs (Exif dirs _) = dirs
+
+-- Debugging function: Write the Exif file separatly to disk
+dumpExif :: FilePath -> IO ()
+dumpExif fn = do 
+    jpeg <- readJpegFromFile fn
+    let newName = replaceExtension fn ".exif"
+    BL.writeFile newName (extractExif jpeg)
+
 
