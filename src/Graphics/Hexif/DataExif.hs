@@ -95,5 +95,9 @@ data ExifTag = TagInteroperabilityIndex
              | TagWhiteBalance
              | TagSceneCaptureType
              | TagPrintImageMatching
+
+             | TagDebugChainedIFD								-- debug only
+             | TagDebugSubIFD                                   -- debug only
+             
      deriving (Eq, Show)
 

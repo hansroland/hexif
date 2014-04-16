@@ -47,10 +47,12 @@ readIFDFileDirs :: Offset -> GetWords -> BL.ByteString -> [IFDFileDir]
 readIFDFileDirs offset getWords bsExif = 
   if offset == 0
      then []
-     else block : blocks
+     else (debug :[]) : block : blocks
+     -- else block : blocks       -- without debugging
   where
     (next, block) = readIFDFileDir offset getWords bsExif
     blocks = readIFDFileDirs next getWords bsExif
+    debug = IFDFileEntry 0xFF01 0 offset (BL.pack [])                            -- debug entry
     
 -- read a single IFD File Directory from a given offset
 readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
@@ -111,6 +113,7 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
 convertStdEntry :: BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
 convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
+       0x0000 -> IFDNum exifTag len                                                  -- debug entry
        0x0002 -> IFDStr exifTag (stringValue tag len strBsValue getWord32 bsExif)
        0x0003 -> IFDNum exifTag offsetOrValue 
        0x0004 -> IFDNum exifTag offsetOrValue
@@ -122,6 +125,7 @@ convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len
       exifTag = toExifTag tag
       offsetOrValue = fromIntegral (runGet getWord32 strBsValue)
       -- formats
+
       -- 0x0002 = ascii string
       -- 0x0003 = unsigned short
       -- 0x0004 = unsigned long
@@ -206,5 +210,7 @@ toExifTag t
    | t == 0xa403 = TagWhiteBalance
    | t == 0xa406 = TagSceneCaptureType
    | t == 0xc4a5 = TagPrintImageMatching
+   | t == 0xFF01 = TagDebugChainedIFD
+   | t == 0xFF02 = TagDebugSubIFD
    | otherwise = TagTagUnknown t
 
