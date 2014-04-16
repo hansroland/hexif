@@ -17,8 +17,11 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Reader, DataExif
-  -- other-modules:       
+  exposed-modules:     Graphics.Hexif
+  other-modules:       Graphics.Hexif.DataExif,
+                       Graphics.Hexif.Utils,
+                       Graphics.Hexif.Reader,
+                       Graphics.Hexif.PrettyPrint       
   other-extensions:    OverloadedStrings
   build-depends:       base >=4.6 && <4.7, 
                        binary >=0.7 && <0.8, 
