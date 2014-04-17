@@ -96,6 +96,14 @@ data ExifTag = TagInteroperabilityIndex
              | TagSceneCaptureType
              | TagPrintImageMatching
 
+             | TagGPSVersionID
+             | TagGPSLatitudeRef
+             | TagGPSLatitude
+             | TagGPSLongitudeRef
+             | TagGPSLogitude
+             | TagGPSAltitudeRef
+             | TagGPSAltitude 
+
              | TagDebugChainedIFD								-- debug only
              | TagDebugSubIFD                                   -- debug only
              

@@ -114,6 +114,7 @@ convertStdEntry :: BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
 convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
        0x0000 -> IFDNum exifTag len                                                  -- debug entry
+       0x0001 -> IFDNum exifTag byteValue 
        0x0002 -> IFDStr exifTag (stringValue tag len strBsValue getWord32 bsExif)
        0x0003 -> IFDNum exifTag offsetOrValue 
        0x0004 -> IFDNum exifTag offsetOrValue
@@ -124,8 +125,9 @@ convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len
    where 
       exifTag = toExifTag tag
       offsetOrValue = fromIntegral (runGet getWord32 strBsValue)
+      byteValue = fromIntegral (runGet getWord8 strBsValue)
       -- formats
-
+      -- 0x0001 = unsigned byte
       -- 0x0002 = ascii string
       -- 0x0003 = unsigned short
       -- 0x0004 = unsigned long
@@ -210,6 +212,15 @@ toExifTag t
    | t == 0xa403 = TagWhiteBalance
    | t == 0xa406 = TagSceneCaptureType
    | t == 0xc4a5 = TagPrintImageMatching
+   
+   | t == 0x0000 = TagGPSVersionID
+   | t == 0x0001 = TagGPSLatitudeRef
+   | t == 0x0002 = TagGPSLatitude
+   | t == 0x0003 = TagGPSLongitudeRef
+   | t == 0x0004 = TagGPSLogitude
+   | t == 0x0005 = TagGPSAltitudeRef
+   | t == 0x0006 = TagGPSAltitude 
+
    | t == 0xFF01 = TagDebugChainedIFD
    | t == 0xFF02 = TagDebugSubIFD
    | otherwise = TagTagUnknown t
