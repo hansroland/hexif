@@ -64,10 +64,14 @@ data ExifTag = TagInteroperabilityIndex
              | TagXResolution
              | TagYResolution
              | TagResolutionUnit
+             | TagSoftware
              | TagDateTime
+             | TagArtist
              | TagJPEGInterchangeFormat
              | TagJPEGInterchangeFormatLength
              | TagYCbCrPositioning
+             | TagRelatedImageWidth
+             | TagRelatedImageLength
              | TagExposureTime
              | TagFNumber
              | TagExposureProgram
@@ -77,6 +81,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagDateTimeDigitized
              | TagComponentsConfiguration
              | TagCompressedBitsPerPixel
+             | TagBrightnessValue
              | TagExposureBiasValue
              | TagMaxApertureValue
              | TagMeteringMode
@@ -84,6 +89,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagFlash
              | TagFocalLength
              | TagMakerNote
+             | TagUserComment
              | TagFlashPixVersion
              | TagColorSpace
              | TagPixelXDimension
@@ -94,6 +100,10 @@ data ExifTag = TagInteroperabilityIndex
              | TagExposureMode
              | TagWhiteBalance
              | TagSceneCaptureType
+             | TagContrast
+             | TagSaturation
+             | TagSharpness
+             | TagImageUniqueID
              | TagPrintImageMatching
 
              | TagGPSVersionID
@@ -103,6 +113,9 @@ data ExifTag = TagInteroperabilityIndex
              | TagGPSLogitude
              | TagGPSAltitudeRef
              | TagGPSAltitude 
+             | TagGPSTimeStamp
+             | TagGPSMapDatum
+             | TagGPSDateStamp
 
              | TagDebugChainedIFD								-- debug only
              | TagDebugSubIFD                                   -- debug only

@@ -181,10 +181,14 @@ toExifTag t
    | t == 0x011a = TagXResolution
    | t == 0x011b = TagYResolution
    | t == 0x0128 = TagResolutionUnit
+   | t == 0x0131 = TagSoftware
    | t == 0x0132 = TagDateTime
+   | t == 0x013b = TagArtist
    | t == 0x0201 = TagJPEGInterchangeFormat
    | t == 0x0202 = TagJPEGInterchangeFormatLength
    | t == 0x0213 = TagYCbCrPositioning
+   | t == 0x1001 = TagRelatedImageWidth
+   | t == 0x1002 = TagRelatedImageLength
    | t == 0x829a = TagExposureTime
    | t == 0x829d = TagFNumber
    | t == 0x8822 = TagExposureProgram
@@ -194,6 +198,7 @@ toExifTag t
    | t == 0x9004 = TagDateTimeDigitized
    | t == 0x9101 = TagComponentsConfiguration
    | t == 0x9102 = TagCompressedBitsPerPixel
+   | t == 0x9203 = TagBrightnessValue
    | t == 0x9204 = TagExposureBiasValue
    | t == 0x9205 = TagMaxApertureValue
    | t == 0x9207 = TagMeteringMode
@@ -201,6 +206,7 @@ toExifTag t
    | t == 0x9209 = TagFlash
    | t == 0x920a = TagFocalLength
    | t == 0x927c = TagMakerNote
+   | t == 0x9286 = TagUserComment
    | t == 0xa000 = TagFlashPixVersion
    | t == 0xa001 = TagColorSpace
    | t == 0xa002 = TagPixelXDimension
@@ -211,6 +217,10 @@ toExifTag t
    | t == 0xa402 = TagExposureMode
    | t == 0xa403 = TagWhiteBalance
    | t == 0xa406 = TagSceneCaptureType
+   | t == 0xa408 = TagContrast
+   | t == 0xa409 = TagSaturation
+   | t == 0xa40a = TagSharpness
+   | t == 0xa420 = TagImageUniqueID
    | t == 0xc4a5 = TagPrintImageMatching
    
    | t == 0x0000 = TagGPSVersionID
@@ -220,6 +230,9 @@ toExifTag t
    | t == 0x0004 = TagGPSLogitude
    | t == 0x0005 = TagGPSAltitudeRef
    | t == 0x0006 = TagGPSAltitude 
+   | t == 0x0007 = TagGPSTimeStamp
+   | t == 0x0012 = TagGPSMapDatum
+   | t == 0x001d = TagGPSDateStamp
 
    | t == 0xFF01 = TagDebugChainedIFD
    | t == 0xFF02 = TagDebugSubIFD
