@@ -11,6 +11,7 @@ module Graphics.Hexif.PrettyPrint (prettyPrint) where
 
 import Graphics.Hexif.DataExif
 import Graphics.Hexif.Utils
+import Text.Printf (printf)
 
 import Data.Char (chr, ord)
 -- import Data.String.Utils(join)
@@ -38,7 +39,13 @@ ppRationalValue :: ExifTag -> (Int,Int) -> String
 ppRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
 ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
 ppRationalValue TagCompressedBitsPerPixel r = ' ' : fmtRat r
+ppRationalValue TagExposureBiasValue r = ppExposureBiasValue r
 ppRationalValue _  rat = fmtRat rat
+
+--convert a rational to a float
+rat2Float :: (Int,Int) -> Float
+rat2Float (n,d) = (fromIntegral n::Float) / (fromIntegral d:: Float)
+
 
 -- format a rational number with a slash
 fmtRatWithSlash :: (Int, Int) -> String
@@ -50,13 +57,18 @@ fmtRat :: (Int, Int) -> String
 fmtRat r@(num, denum) = 
      if mod num denum == 0 then fmtRatInt r else fmtRatFloat r
 
-   
+
 fmtRatInt :: (Int, Int) -> String
 fmtRatInt (num, denum) = show $ div num denum
+ 
 
 fmtRatFloat :: (Int, Int) -> String
-fmtRatFloat (num, denum) =
-     show ((fromIntegral num::Float) / (fromIntegral denum:: Float))
+fmtRatFloat = show . rat2Float
+
+-- Pretty print the value of the tag ExposureBiasValue
+ppExposureBiasValue :: (Int, Int) -> String
+ppExposureBiasValue r = printf "%.2f EV" (rat2Float r)
+    
 
 -- ----------------------------------------------------------------------------
 -- Pretty Printers for Undefined Values
@@ -120,6 +132,9 @@ ppNumValue TagCustomRendered n = ppCustomRendered n
 ppNumValue TagExposureMode n = ppTagExposureMode n
 ppNumValue TagWhiteBalance n = ppTagWhiteBalance n
 ppNumValue TagSceneCaptureType n = ppSceneCaptureType n
+ppNumValue TagContrast n = ppTagContrastSharpness n
+ppNumValue TagSaturation n = ppTagSaturation n
+ppNumValue TagSharpness n = ppTagContrastSharpness n
 ppNumValue _ n = show n
 
 -- pretty print of tag Resolution Unit
@@ -241,16 +256,19 @@ ppTagColorSpace n = undef n
 ppCustomRendered :: Int -> String
 ppCustomRendered 0 = "Normal process"
 ppCustomRendered 1 = "Custom process"
+ppCustomRendered n = undef n
 
 ppTagExposureMode :: Int -> String
 ppTagExposureMode 0 = "Auto exposure"
 ppTagExposureMode 1 = "Manual exposure"
 ppTagExposureMode 2 = "Auto bracket"
+ppTagExposureMode n = undef n
 
 -- pretty print of tag WhiteBalance
 ppTagWhiteBalance :: Int -> String
 ppTagWhiteBalance 0 = "Auto white balance"
 ppTagWhiteBalance 1 = "Manual white balance"
+ppTagWhiteBalance n = undef n
 
 -- pretty print of tag SceneCaptureType
 ppSceneCaptureType :: Int -> String
@@ -259,6 +277,18 @@ ppSceneCaptureType 1 = "Landscape"
 ppSceneCaptureType 2 = "Portrait"
 ppSceneCaptureType 3 = "Night scene"
 ppSceneCaptureType n = undef n
+
+ppTagContrastSharpness :: Int -> String
+ppTagContrastSharpness 0 = "Normal"
+ppTagContrastSharpness 1 = "Soft"
+ppTagContrastSharpness 2 = "Hard"
+ppTagContrastSharpness n = undef n
+
+ppTagSaturation :: Int -> String
+ppTagSaturation 0 = "Normal"
+ppTagSaturation 1 = "Low saturation"
+ppTagSaturation 2 = "High saturation"
+ppTagSaturation n = undef n
 
 undef :: Int -> String
 undef n = "undefined " ++  show n
