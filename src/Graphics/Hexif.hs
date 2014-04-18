@@ -25,9 +25,15 @@ import Graphics.Hexif.PrettyPrint
 import qualified Data.ByteString.Lazy as BL
 import System.FilePath
 
--- Return a list of all ExifFields
+-- Return a list of all ExifFields (but without debug files)
 allTags :: Exif -> [ExifField]
-allTags exif = prettyPrint $ concat $ dirs exif
+allTags exif = filter removeDebugs (allTagsInclDebug exif)
+  where
+    removeDebugs f = exifTag f /= TagDebugChainedIFD && exifTag f /= TagDebugSubIFD
+
+-- Return a list of all ExifFields including the debug tags
+allTagsInclDebug :: Exif -> [ExifField]
+allTagsInclDebug exif = prettyPrint $ concat $ dirs exif
 
 -- Return the exit data from a jpeg file
 fromFile :: FilePath -> IO Exif
