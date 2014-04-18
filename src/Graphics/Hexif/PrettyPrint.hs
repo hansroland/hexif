@@ -40,6 +40,7 @@ ppRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
 ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
 ppRationalValue TagCompressedBitsPerPixel r = ' ' : fmtRat r
 ppRationalValue TagExposureBiasValue r = ppExposureBiasValue r
+ppRationalValue TagFocalLength r = ppFocalLength r
 ppRationalValue _  rat = fmtRat rat
 
 --convert a rational to a float
@@ -68,6 +69,10 @@ fmtRatFloat = show . rat2Float
 -- Pretty print the value of the tag ExposureBiasValue
 ppExposureBiasValue :: (Int, Int) -> String
 ppExposureBiasValue r = printf "%.2f EV" (rat2Float r)
+
+-- Pretty print the value of the tag FocalLength
+ppFocalLength :: (Int, Int) -> String
+ppFocalLength r = printf "%.1f mm" (rat2Float r)
     
 
 -- ----------------------------------------------------------------------------

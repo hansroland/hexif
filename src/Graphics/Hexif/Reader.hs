@@ -138,12 +138,12 @@ convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len
 -- subfunctions of convert  
 
 -- read out a string value 
--- Note: TagInteroperabilityIndex has a non standard representation
+-- Note: TagInteroperabilityIndex has a non standard representation -> Special case for 1
 stringValue :: Word16 -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
-stringValue  1  len strBsValue _  _       = unpackLazyBS strBsValue
+stringValue  1  len strBsValue _  _       = take 3 (unpackLazyBS strBsValue)
 stringValue tag len strBsValue getWord32 bsExif = runGet (getStringValue len offset) bsExif
     where    
-        offset = fromIntegral (runGet getWord32 strBsValue)  
+        offset = fromIntegral (runGet getWord32 strBsValue)
         getStringValue :: Int -> Int -> Get String
         getStringValue len offset = do
             skip offset
