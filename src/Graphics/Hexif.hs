@@ -15,6 +15,13 @@
 --
 -- -----------------------------------------------------------------------------
 module Graphics.Hexif 
+  (ExifField(..)
+  , ExifTag(..)
+  , allTags
+  , allTagsInclDebug
+  , fromFile
+  , fromExifFile
+  , dumpExif)
   where
 
 import Graphics.Hexif.DataExif
@@ -38,6 +45,14 @@ allTagsInclDebug exif = prettyPrint $ concat $ dirs exif
 -- Return the exit data from a jpeg file
 fromFile :: FilePath -> IO Exif
 fromFile fn = do
+    jpeg <- readJpegFromFile fn
+    let bsExif = extractExif jpeg
+    return $ readExif bsExif
+
+
+-- Helper function to read exif data from a dumped exif file
+fromExifFile :: FilePath -> IO Exif
+fromExifFile fn = do
    inp <- BL.readFile fn
    return $ readExif inp 
 

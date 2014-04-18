@@ -11,8 +11,8 @@ import System.IO
 
 main :: IO()
 main = do
-   -- exif <- fromFile "JG1111.exif"
-   exif <- fromFile "RS4847.exif"
+   exif <- fromFile "JG1111.jpg"
+   -- exif <- fromFile "RS4847.JPG"
    mapM_ print (allTagsInclDebug exif)
 
 
