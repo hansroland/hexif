@@ -147,7 +147,7 @@ ppResolutionUnit :: Int -> String
 ppResolutionUnit 1 = "No absolute unit"
 ppResolutionUnit 2 = "Inch"
 ppResolutionUnit 3 = "Centimeter"
-ppResulutionUnit n = undef n
+ppResolutionUnit n = undef n
 
 -- pretty print of tag Orientation 
 ppOrientation :: Int -> String
