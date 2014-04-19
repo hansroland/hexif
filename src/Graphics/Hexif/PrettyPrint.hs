@@ -88,7 +88,7 @@ ppUndefinedValue TagInteroperabilityVersion len value = value
 ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 
 ppExifVersion :: String -> String
-ppExifVersion value = printf "Exif Version %.2f"  num
+ppExifVersion value = "Exif Version " ++ show num
   where num :: Float = read value / 100.0
 
 ppFlashPixVersion :: String -> String
