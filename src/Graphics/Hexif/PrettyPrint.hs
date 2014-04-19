@@ -6,7 +6,7 @@
 --
 --
 -- -----------------------------------------------------------------------------
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns, ScopedTypeVariables #-}
 module Graphics.Hexif.PrettyPrint (prettyPrint) where
 
 import Graphics.Hexif.DataExif
@@ -79,7 +79,7 @@ ppFocalLength r = printf "%.1f mm" (rat2Float r)
 -- Pretty Printers for Undefined Values
 -- ----------------------------------------------------------------------------
 ppUndefinedValue :: ExifTag -> Int -> String -> String
-ppUndefinedValue TagExifVersion len value = ppExifValue value
+ppUndefinedValue TagExifVersion len value = ppExifVersion value
 ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
 ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
 ppUndefinedValue TagFileSource len value = ppFileSource value
@@ -87,14 +87,13 @@ ppUndefinedValue TagSceneType len value = ppScreenType value
 ppUndefinedValue TagInteroperabilityVersion len value = value
 ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 
-ppExifValue :: String -> String
-ppExifValue value = "Exif Version " ++ show value
--- ppExifValue value = "Exif Version " ++ show (num/100)
---   where num = read value :: Float
+ppExifVersion :: String -> String
+ppExifVersion value = printf "Exif Version %.2f"  num
+  where num :: Float = read value / 100.0
 
-
-ppFlashPixVersion value = "FlashPix Version " ++ show (num/100)
-   where num = read value :: Float
+ppFlashPixVersion :: String -> String
+ppFlashPixVersion value = printf "FlashPix Version %.1f" num
+  where num :: Float = read value / 100.0
 
 ppComponentsConfiguration :: String -> String
 ppComponentsConfiguration conf = join " " $ map ppComps conf
