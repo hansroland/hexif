@@ -39,7 +39,7 @@ readHeader = runGet getHeader
             else (getWord16be, getWord32be) 
         const2A <- getByteString 2
         -- Get offset to main directory
-        offset <- fst getWords
+        offset <- snd getWords
         return (getWords, fromIntegral offset)
 
 -- read chained FileDirs from a given offset
@@ -116,15 +116,16 @@ convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len
        0x0000 -> IFDNum exifTag len                                                  -- debug entry
        0x0001 -> IFDNum exifTag byteValue 
        0x0002 -> IFDStr exifTag (stringValue tag len strBsValue getWord32 bsExif)
-       0x0003 -> IFDNum exifTag offsetOrValue 
-       0x0004 -> IFDNum exifTag offsetOrValue
-       0x0005 -> IFDRat exifTag (rationalValue offsetOrValue bsExif words)
+       0x0003 -> IFDNum exifTag offsetOrValue16 
+       0x0004 -> IFDNum exifTag offsetOrValue32
+       0x0005 -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
        0x0007 -> IFDUdf exifTag len (unpackLazyBS strBsValue)
-       0x000A -> IFDRat exifTag (rationalValue offsetOrValue bsExif words)
+       0x000A -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
        _      -> error $ "Format " ++ show format ++ " not yet implemented"  
    where 
       exifTag = toExifTag tag
-      offsetOrValue = fromIntegral (runGet getWord32 strBsValue)
+      offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
+      offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
       byteValue = fromIntegral (runGet getWord8 strBsValue)
       -- formats
       -- 0x0001 = unsigned byte
