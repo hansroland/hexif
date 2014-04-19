@@ -217,6 +217,7 @@ toExifTag t
    | t == 0xa401 = TagCustomRendered
    | t == 0xa402 = TagExposureMode
    | t == 0xa403 = TagWhiteBalance
+   | t == 0xa405 = TagFocalLengthIn35mmFilm
    | t == 0xa406 = TagSceneCaptureType
    | t == 0xa408 = TagContrast
    | t == 0xa409 = TagSaturation

@@ -99,6 +99,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagCustomRendered
              | TagExposureMode
              | TagWhiteBalance
+             | TagFocalLengthIn35mmFilm
              | TagSceneCaptureType
              | TagContrast
              | TagSaturation
