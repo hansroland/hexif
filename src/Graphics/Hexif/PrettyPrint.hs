@@ -123,176 +123,192 @@ ppScreenType value =
 -- PrettyPrint functions for Integer values
 -- -----------------------------------------------------------------------------
 ppNumValue :: ExifTag -> Int -> String
-ppNumValue TagCompression n    = ppCompression n
-ppNumValue TagResolutionUnit n = ppResolutionUnit n
-ppNumValue TagOrientation n    = ppOrientation n
-ppNumValue TagYCbCrPositioning n = ppYCbCrPositioning n
-ppNumValue TagExposureProgram n = ppTagExposureProgram n
-ppNumValue TagMeteringMode n = ppTagMeteringMode n
-ppNumValue TagLightSource n = ppTagLightSource n
-ppNumValue TagFlash n = ppTagFlash n
-ppNumValue TagColorSpace n = ppTagColorSpace n
-ppNumValue TagCustomRendered n = ppCustomRendered n
-ppNumValue TagExposureMode n = ppTagExposureMode n
-ppNumValue TagWhiteBalance n = ppTagWhiteBalance n
-ppNumValue TagSceneCaptureType n = ppSceneCaptureType n
-ppNumValue TagContrast n = ppTagContrastSharpness n
-ppNumValue TagSaturation n = ppTagSaturation n
-ppNumValue TagSharpness n = ppTagContrastSharpness n
-ppNumValue _ n = show n
+ppNumValue tag n = case tag of
+    TagCompression       -> ppCompression n
+    TagResolutionUnit    -> ppResolutionUnit n
+    TagOrientation       -> ppOrientation n
+    TagYCbCrPositioning  -> ppYCbCrPositioning n
+    TagExposureProgram   -> ppTagExposureProgram n
+    TagMeteringMode      -> ppTagMeteringMode n
+    TagLightSource       -> ppTagLightSource n
+    TagFlash             -> ppTagFlash n
+    TagColorSpace        -> ppTagColorSpace n
+    TagCustomRendered    -> ppCustomRendered n
+    TagExposureMode      -> ppTagExposureMode n
+    TagWhiteBalance      -> ppTagWhiteBalance n
+    TagSceneCaptureType  -> ppSceneCaptureType n
+    TagContrast          -> ppTagContrastSharpness n
+    TagSaturation        -> ppTagSaturation n
+    TagSharpness         -> ppTagContrastSharpness n
+    _                    -> show n
 
 -- pretty print of tag Resolution Unit
 ppResolutionUnit :: Int -> String
-ppResolutionUnit 1 = "No absolute unit"
-ppResolutionUnit 2 = "Inch"
-ppResolutionUnit 3 = "Centimeter"
-ppResolutionUnit n = undef n
+ppResolutionUnit n = case n of
+    1 -> "No absolute unit"
+    2 -> "Inch"
+    3 -> "Centimeter"
+    _ -> undef n
 
 -- pretty print of tag Orientation 
 ppOrientation :: Int -> String
-ppOrientation 1 = "Top-left"
-ppOrientation 2 = "Top-right" 
-ppOrientation 3 = "Bottom-right"
-ppOrientation 4 = "Bottom-left"
-ppOrientation 5 = "Left-top"
-ppOrientation 6 = "Right-top"
-ppOrientation 7 = "Right-bottom"
-ppOrientation 8 = "Left-bottom"
-ppOrientation n = undef n
+ppOrientation n = case n of
+    1 -> "Top-left"
+    2 -> "Top-right" 
+    3 -> "Bottom-right"
+    4 -> "Bottom-left"
+    5 -> "Left-top"
+    6 -> "Right-top"
+    7 -> "Right-bottom"
+    8 -> "Left-bottom"
+    _ -> undef n
 
 --pretty print of tag YCbCrPositioning
 ppYCbCrPositioning :: Int -> String
-ppYCbCrPositioning 1 = "Centered"
-ppYCbCrPositioning 2 = "Co-sited"
-ppYCbCrPositioning n = undef n
+ppYCbCrPositioning n = case n of
+    1 -> "Centered"
+    2 -> "Co-sited"
+    _ -> undef n
 
 -- pretty print of tag Compression 
 ppCompression :: Int -> String
-ppCompression 1 = "No compression"
-ppCompression 2 = "CCITT modified Huffman RLE"
-ppCompression 3 = "CCITT Group 3 fax"
-ppCompression 4 = "CCITT Group 4 fax"
-ppCompression 5 = "LZW"
-ppCompression 6 = "JPEG compression"
-ppCompression 7 = "JPEG (new style)"
-ppCompression n = undef n
+ppCompression n = case n of
+    1 -> "No compression"
+    2 -> "CCITT modified Huffman RLE"
+    3 -> "CCITT Group 3 fax"
+    4 -> "CCITT Group 4 fax"
+    5 -> "LZW"
+    6 -> "JPEG compression"
+    7 -> "JPEG (new style)"
+    _ -> undef n
 
 -- pretty print of tag ExposureProgram
 ppTagExposureProgram :: Int -> String
-ppTagExposureProgram 0 = "Not defined"
-ppTagExposureProgram 1 = "Manual"
-ppTagExposureProgram 2 = "Normal program"
-ppTagExposureProgram 3 = "Aperture priority"
-ppTagExposureProgram 4 = "Shutter priority"
-ppTagExposureProgram 5 = "Creative program" -- (biased toward depth of field)
-ppTagExposureProgram 6 = "Action program"   -- (biased toward fast shutter speed)
-ppTagExposureProgram 7 = "Portrait mode"    -- (for closeup photos with the background out of focus)
-ppTagExposureProgram 8 = "Landscape mode"   -- (for landscape photos with the background in focus)
-ppTagExposureProgram n = undef n
+ppTagExposureProgram n = case n of
+    0 -> "Not defined"
+    1 -> "Manual"
+    2 -> "Normal program"
+    3 -> "Aperture priority"
+    4 -> "Shutter priority"
+    5 -> "Creative program" -- (biased toward depth of field)
+    6 -> "Action program"   -- (biased toward fast shutter speed)
+    7 -> "Portrait mode"    -- (for closeup photos with the background out of focus)
+    8 -> "Landscape mode"   -- (for landscape photos with the background in focus)
+    _ -> undef n
 
 
 ppTagMeteringMode :: Int -> String
-ppTagMeteringMode 0 = "Unknown"
-ppTagMeteringMode 1 = "Average"
-ppTagMeteringMode 2 = "CenterWeightedAverage"
-ppTagMeteringMode 3 = "Spot"
-ppTagMeteringMode 4 = "MultiSpot"
-ppTagMeteringMode 5 = "Pattern"
-ppTagMeteringMode 6 = "Partial"
-ppTagMeteringMode 255 = "other"
-ppTagMeteringMode n = undef n
+ppTagMeteringMode n = case n of
+    0 -> "Unknown"
+    1 -> "Average"
+    2 -> "CenterWeightedAverage"
+    3 -> "Spot"
+    4 -> "MultiSpot"
+    5 -> "Pattern"
+    6 -> "Partial"
+    255 -> "other"
+    _ -> undef n
 
 ppTagLightSource :: Int -> String
-ppTagLightSource 0 = "Unknown"
-ppTagLightSource 1 = "Daylight"
-ppTagLightSource 2 = "Fluorescent"
-ppTagLightSource 3 = "Tungsten (incandescent light)"
-ppTagLightSource 4 = "Flash"
-ppTagLightSource 9 = "Fine weather"
-ppTagLightSource 10 = "Cloudy weather"
-ppTagLightSource 11 = "Shade"
-ppTagLightSource 12 = "Daylight fluorescent (D 5700 - 7100K)"
-ppTagLightSource 13 = "Day white fluorescent (N 4600 - 5400K)"
-ppTagLightSource 14 = "Cool white fluorescent (W 3900 - 4500K)"
-ppTagLightSource 15 = "White fluorescent (WW 3200 - 3700K)"
-ppTagLightSource 17 = "Standard light A"
-ppTagLightSource 18 = "Standard light B"
-ppTagLightSource 19 = "Standard light C"
-ppTagLightSource 20 = "D55"
-ppTagLightSource 21 = "D65"
-ppTagLightSource 22 = "D75"
-ppTagLightSource 23 = "D50"
-ppTagLightSource 24 = "ISO studio tungsten"
-ppTagLightSource 255 = "Other light source"
-ppTagLightSource n = undef n
+ppTagLightSource n = case n of
+    0 -> "Unknown"
+    1 -> "Daylight"
+    2 -> "Fluorescent"
+    3 -> "Tungsten (incandescent light)"
+    4 -> "Flash"
+    9 -> "Fine weather"
+    10 -> "Cloudy weather"
+    11 -> "Shade"
+    12 -> "Daylight fluorescent (D 5700 - 7100K)"
+    13 -> "Day white fluorescent (N 4600 - 5400K)"
+    14 -> "Cool white fluorescent (W 3900 - 4500K)"
+    15 -> "White fluorescent (WW 3200 - 3700K)"
+    17 -> "Standard light A"
+    18 -> "Standard light B"
+    19 -> "Standard light C"
+    20 -> "D55"
+    21 -> "D65"
+    22 -> "D75"
+    23 -> "D50"
+    24 -> "ISO studio tungsten"
+    255 -> "Other light source"
+    _ -> undef n
 
 
 ppTagFlash :: Int -> String
-ppTagFlash 0x0000 = "Flash did not fire"
-ppTagFlash 0x0001 = "Flash fired"
-ppTagFlash 0x0005 = "Strobe return light not detected"
-ppTagFlash 0x0007 = "Strobe return light detected"
-ppTagFlash 0x0009 = "Flash fired, compulsory flash mode"
-ppTagFlash 0x000D = "Flash fired, compulsory flash mode, return light not detected"
-ppTagFlash 0x000F = "Flash fired, compulsory flash mode, return light detected"
-ppTagFlash 0x0010 = "Flash did not fire, compulsory flash mode"
-ppTagFlash 0x0018 = "Flash did not fire, auto mode"
-ppTagFlash 0x0019 = "Flash fired, auto mode"
-ppTagFlash 0x001D = "Flash fired, auto mode, return light not detected"
-ppTagFlash 0x001F = "Flash fired, auto mode, return light detected"
-ppTagFlash 0x0020 = "No flash function"
-ppTagFlash 0x0041 = "Flash fired, red-eye reduction mode"
-ppTagFlash 0x0045 = "Flash fired, red-eye reduction mode, return light not detected"
-ppTagFlash 0x0047 = "Flash fired, red-eye reduction mode, return light detected"
-ppTagFlash 0x0049 = "Flash fired, compulsory flash mode, red-eye reduction mode"
-ppTagFlash 0x004D = "Flash fired, compulsory flash mode, red-eye reduction mode, return light not detected"
-ppTagFlash 0x004F = "Flash fired, compulsory flash mode, red-eye reduction mode, return light detected"
-ppTagFlash 0x0059 = "Flash fired, auto mode, red-eye reduction mode"
-ppTagFlash 0x005D = "Flash fired, auto mode, return light not detected, red-eye reduction mode"
-ppTagFlash 0x005F = "Flash fired, auto mode, return light detected, red-eye reduction mode"
-ppTagFlash n = undef n
+ppTagFlash n = case n of
+    0x0000 -> "Flash did not fire"
+    0x0001 -> "Flash fired"
+    0x0005 -> "Strobe return light not detected"
+    0x0007 -> "Strobe return light detected"
+    0x0009 -> "Flash fired, compulsory flash mode"
+    0x000D -> "Flash fired, compulsory flash mode, return light not detected"
+    0x000F -> "Flash fired, compulsory flash mode, return light detected"
+    0x0010 -> "Flash did not fire, compulsory flash mode"
+    0x0018 -> "Flash did not fire, auto mode"
+    0x0019 -> "Flash fired, auto mode"
+    0x001D -> "Flash fired, auto mode, return light not detected"
+    0x001F -> "Flash fired, auto mode, return light detected"
+    0x0020 -> "No flash function"
+    0x0041 -> "Flash fired, red-eye reduction mode"
+    0x0045 -> "Flash fired, red-eye reduction mode, return light not detected"
+    0x0047 -> "Flash fired, red-eye reduction mode, return light detected"
+    0x0049 -> "Flash fired, compulsory flash mode, red-eye reduction mode"
+    0x004D -> "Flash fired, compulsory flash mode, red-eye reduction mode, return light not detected"
+    0x004F -> "Flash fired, compulsory flash mode, red-eye reduction mode, return light detected"
+    0x0059 -> "Flash fired, auto mode, red-eye reduction mode"
+    0x005D -> "Flash fired, auto mode, return light not detected, red-eye reduction mode"
+    0x005F -> "Flash fired, auto mode, return light detected, red-eye reduction mode"
+    _      -> undef n
 
 ppTagColorSpace :: Int -> String
-ppTagColorSpace 1 = "sRGB"
-ppTagColorSpace 65535 = "Uncalibrated"
-ppTagColorSpace n = undef n 
+ppTagColorSpace n = case n of
+    1     -> "sRGB"
+    65535 -> "Uncalibrated"
+    _     -> undef n 
 
 ppCustomRendered :: Int -> String
-ppCustomRendered 0 = "Normal process"
-ppCustomRendered 1 = "Custom process"
-ppCustomRendered n = undef n
+ppCustomRendered n = case n of
+    0 -> "Normal process"
+    1 -> "Custom process"
+    _ -> undef n
 
 ppTagExposureMode :: Int -> String
-ppTagExposureMode 0 = "Auto exposure"
-ppTagExposureMode 1 = "Manual exposure"
-ppTagExposureMode 2 = "Auto bracket"
-ppTagExposureMode n = undef n
+ppTagExposureMode n = case n of
+    0 -> "Auto exposure"
+    1 -> "Manual exposure"
+    2 -> "Auto bracket"
+    _ -> undef n
 
 -- pretty print of tag WhiteBalance
 ppTagWhiteBalance :: Int -> String
-ppTagWhiteBalance 0 = "Auto white balance"
-ppTagWhiteBalance 1 = "Manual white balance"
-ppTagWhiteBalance n = undef n
+ppTagWhiteBalance n = case n of 
+    0 -> "Auto white balance"
+    1 -> "Manual white balance"
+    _ -> undef n
 
 -- pretty print of tag SceneCaptureType
 ppSceneCaptureType :: Int -> String
-ppSceneCaptureType 0 = "Standard"
-ppSceneCaptureType 1 = "Landscape"
-ppSceneCaptureType 2 = "Portrait"
-ppSceneCaptureType 3 = "Night scene"
-ppSceneCaptureType n = undef n
+ppSceneCaptureType n = case n of
+    0 -> "Standard"
+    1 -> "Landscape"
+    2 -> "Portrait"
+    3 -> "Night scene"
+    _ -> undef n
 
 ppTagContrastSharpness :: Int -> String
-ppTagContrastSharpness 0 = "Normal"
-ppTagContrastSharpness 1 = "Soft"
-ppTagContrastSharpness 2 = "Hard"
-ppTagContrastSharpness n = undef n
+ppTagContrastSharpness n = case n of
+    0 -> "Normal"
+    1 -> "Soft"
+    2 -> "Hard"
+    _ -> undef n
 
 ppTagSaturation :: Int -> String
-ppTagSaturation 0 = "Normal"
-ppTagSaturation 1 = "Low saturation"
-ppTagSaturation 2 = "High saturation"
-ppTagSaturation n = undef n
+ppTagSaturation n = case n of
+    0 -> "Normal"
+    1 -> "Low saturation"
+    2 -> "High saturation"
+    _ -> undef n
 
 undef :: Int -> String
 undef n = "undefined " ++  show n
