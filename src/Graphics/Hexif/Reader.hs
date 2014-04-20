@@ -180,6 +180,9 @@ toExifTag :: Word16 -> ExifTag
 toExifTag t 
    | t == 0x0001 = TagInteroperabilityIndex
    | t == 0x0002 = TagInteroperabilityVersion
+   | t == 0x0100 = TagImageWidth
+   | t == 0x0101 = TagImageLength
+   | t == 0x0102 = TagBitsPerSample
    | t == 0x0103 = TagCompression
    | t == 0x010e = TagImageDescription
    | t == 0x010f = TagMake
@@ -205,6 +208,8 @@ toExifTag t
    | t == 0x9004 = TagDateTimeDigitized
    | t == 0x9101 = TagComponentsConfiguration
    | t == 0x9102 = TagCompressedBitsPerPixel
+   | t == 0x9201 = TagShutterSpeedValue
+   | t == 0x9202 = TagApertureValue
    | t == 0x9203 = TagBrightnessValue
    | t == 0x9204 = TagExposureBiasValue
    | t == 0x9205 = TagMaxApertureValue
@@ -218,13 +223,18 @@ toExifTag t
    | t == 0xa001 = TagColorSpace
    | t == 0xa002 = TagPixelXDimension
    | t == 0xa003 = TagPixelYDimension
+   | t == 0xa20e = TagFocalPlaneXResolution
+   | t == 0xa20f = TagFocalPlaneYResolution
+   | t == 0xa210 = TagFocalPlaneResolutionUnit
    | t == 0xa300 = TagFileSource
    | t == 0xa301 = TagSceneType
    | t == 0xa401 = TagCustomRendered
    | t == 0xa402 = TagExposureMode
    | t == 0xa403 = TagWhiteBalance
+   | t == 0xa404 = TagDigitalZoomRatio
    | t == 0xa405 = TagFocalLengthIn35mmFilm
    | t == 0xa406 = TagSceneCaptureType
+   | t == 0xa407 = TagGainControl
    | t == 0xa408 = TagContrast
    | t == 0xa409 = TagSaturation
    | t == 0xa40a = TagSharpness

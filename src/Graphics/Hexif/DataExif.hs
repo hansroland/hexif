@@ -55,6 +55,9 @@ data IFDFileEntry = IFDFileEntry
 -- Definition of all the supported Exif tags
 data ExifTag = TagInteroperabilityIndex
              | TagInteroperabilityVersion
+             | TagImageWidth
+             | TagImageLength
+             | TagBitsPerSample
              | TagCompression
              | TagImageDescription
              | TagModel
@@ -81,6 +84,8 @@ data ExifTag = TagInteroperabilityIndex
              | TagDateTimeDigitized
              | TagComponentsConfiguration
              | TagCompressedBitsPerPixel
+             | TagShutterSpeedValue
+             | TagApertureValue
              | TagBrightnessValue
              | TagExposureBiasValue
              | TagMaxApertureValue
@@ -94,13 +99,18 @@ data ExifTag = TagInteroperabilityIndex
              | TagColorSpace
              | TagPixelXDimension
              | TagPixelYDimension
+             | TagFocalPlaneXResolution
+             | TagFocalPlaneYResolution
+             | TagFocalPlaneResolutionUnit
              | TagFileSource
              | TagSceneType
              | TagCustomRendered
              | TagExposureMode
              | TagWhiteBalance
+             | TagDigitalZoomRatio
              | TagFocalLengthIn35mmFilm
              | TagSceneCaptureType
+             | TagGainControl
              | TagContrast
              | TagSaturation
              | TagSharpness

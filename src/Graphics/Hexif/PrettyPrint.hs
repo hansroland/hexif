@@ -19,7 +19,7 @@ import Data.Char (chr, ord)
 prettyPrint :: IFDDir -> [ExifField]
 prettyPrint entries = map ppIFDEntry (flatten entries)
 
--- Note: suDirs will always be printed at the end
+-- Note: subDirs will always be printed at the end
 flatten :: IFDDir -> [IFDEntry]
 flatten [] = []
 flatten ((IFDSub tag ifdDir) : ds) = flatten ds ++ flatten ifdDir
@@ -137,6 +137,7 @@ ppNumValue tag n = case tag of
     TagExposureMode      -> ppTagExposureMode n
     TagWhiteBalance      -> ppTagWhiteBalance n
     TagSceneCaptureType  -> ppSceneCaptureType n
+    TagGainControl       -> ppTagGainControl n
     TagContrast          -> ppTagContrastSharpness n
     TagSaturation        -> ppTagSaturation n
     TagSharpness         -> ppTagContrastSharpness n
@@ -294,6 +295,15 @@ ppSceneCaptureType n = case n of
     1 -> "Landscape"
     2 -> "Portrait"
     3 -> "Night scene"
+    _ -> undef n
+
+ppTagGainControl :: Int -> String
+ppTagGainControl n = case n of
+    0 -> "None"
+    1 -> "Low gain up"
+    2 -> "High gain up"
+    3 -> "Low gain down"
+    4 -> "High gain down"
     _ -> undef n
 
 ppTagContrastSharpness :: Int -> String
