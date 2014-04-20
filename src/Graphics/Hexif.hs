@@ -36,7 +36,12 @@ import System.FilePath
 allTags :: Exif -> [ExifField]
 allTags exif = filter removeDebugs (allTagsInclDebug exif)
   where
-    removeDebugs f = exifTag f /= TagDebugChainedIFD && exifTag f /= TagDebugSubIFD
+    removeDebugs f = not $ elem (exifTag f) 
+      [ TagSubDir_IFDMain
+      , TagSubDir_IFDExif
+      , TagSubDir_IFDGPS
+      , TagSubDir_IFDInterop
+      ]
 
 -- Return a list of all ExifFields including the debug tags
 allTagsInclDebug :: Exif -> [ExifField]

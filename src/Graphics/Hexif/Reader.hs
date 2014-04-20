@@ -23,7 +23,7 @@ readExif bsExif6 = Exif mainDirs getWords
     where 
       bsExif = BL.drop 6 bsExif6
       mainDirs = map (convertDir bsExif getWords) mainFileDirs
-      mainFileDirs = readIFDFileDirs offset getWords bsExif
+      mainFileDirs = readIFDFileDirs IFDMain offset getWords bsExif
       (getWords, offset) = readHeader bsExif
 
 -- Read the header data from a ByteString representing an EXIF file 
@@ -43,16 +43,16 @@ readHeader = runGet getHeader
         return (getWords, fromIntegral offset)
 
 -- read chained FileDirs from a given offset
-readIFDFileDirs :: Offset -> GetWords -> BL.ByteString -> [IFDFileDir]
-readIFDFileDirs offset getWords bsExif = 
+readIFDFileDirs :: DirTag -> Offset -> GetWords -> BL.ByteString -> [IFDFileDir]
+readIFDFileDirs dirTag offset getWords bsExif = 
   if offset == 0
      then []
      else (debug :[]) : block : blocks
      -- else block : blocks       -- without debugging
   where
     (next, block) = readIFDFileDir offset getWords bsExif
-    blocks = readIFDFileDirs next getWords bsExif
-    debug = IFDFileEntry 0xFF01 0 offset (BL.pack [])                            -- debug entry
+    blocks = readIFDFileDirs dirTag next getWords bsExif
+    debug = IFDFileEntry (dirTagToWord16 dirTag) 0 offset (BL.pack [])                            -- debug entry
     
 -- read a single IFD File Directory from a given offset
 readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
@@ -106,21 +106,21 @@ convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEnt
 convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub  dirTag subDir
     where 
       subDir = convertDir bsExif getWords fileDir 
-      fileDir = concat $ readIFDFileDirs offset getWords bsExif
+      fileDir = concat $ readIFDFileDirs dirTag offset getWords bsExif
       offset = fromIntegral (runGet getWord32 strBsValue)
 
 -- a standard entry represents a single tag and its value
 convertStdEntry :: BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
 convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
-       0x0000 -> IFDNum exifTag len                                                  -- debug entry
-       0x0001 -> IFDNum exifTag byteValue 
-       0x0002 -> IFDStr exifTag (stringValue tag len strBsValue getWord32 bsExif)
-       0x0003 -> IFDNum exifTag offsetOrValue16 
-       0x0004 -> IFDNum exifTag offsetOrValue32
-       0x0005 -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
-       0x0007 -> IFDUdf exifTag len (unpackLazyBS strBsValue)
-       0x000A -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
+       0  -> IFDNum exifTag len                                                  -- debug entry
+       1  -> IFDNum exifTag byteValue 
+       2  -> IFDStr exifTag (stringValue tag len strBsValue getWord32 bsExif)
+       3  -> IFDNum exifTag offsetOrValue16 
+       4  -> IFDNum exifTag offsetOrValue32
+       5  -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
+       7  -> IFDUdf exifTag len (unpackLazyBS strBsValue)
+       10 -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
        _      -> error $ "Format " ++ show format ++ " not yet implemented"  
    where 
       exifTag = toExifTag tag
@@ -168,6 +168,12 @@ toDirTag t
     | t == 0xa005 = Just IFDInterop
     | t == 0x8825 = Just IFDGPS
 	| otherwise   = Nothing
+
+dirTagToWord16 :: DirTag -> Word16
+dirTagToWord16 IFDMain = 0xFF01 
+dirTagToWord16 IFDExif = 0xFF02
+dirTagToWord16 IFDInterop = 0xFF03
+dirTagToWord16 IFDGPS = 0xFF04
 
 -- Convert a Word16 number to an Exif Tag
 toExifTag :: Word16 -> ExifTag
@@ -236,7 +242,10 @@ toExifTag t
    | t == 0x0012 = TagGPSMapDatum
    | t == 0x001d = TagGPSDateStamp
 
-   | t == 0xFF01 = TagDebugChainedIFD
-   | t == 0xFF02 = TagDebugSubIFD
+   | t == 0xff01 = TagSubDir_IFDMain
+   | t == 0xff02 = TagSubDir_IFDExif
+   | t == 0xff03 = TagSubDir_IFDInterop
+   | t == 0xff04 = TagSubDir_IFDGPS
+
    | otherwise = TagTagUnknown t
 

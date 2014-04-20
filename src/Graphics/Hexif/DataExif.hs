@@ -118,8 +118,11 @@ data ExifTag = TagInteroperabilityIndex
              | TagGPSMapDatum
              | TagGPSDateStamp
 
-             | TagDebugChainedIFD								-- debug only
-             | TagDebugSubIFD                                   -- debug only
+
+			 | TagSubDir_IFDMain
+             | TagSubDir_IFDExif
+             | TagSubDir_IFDGPS
+             | TagSubDir_IFDInterop
              
      deriving (Eq, Show)
 
