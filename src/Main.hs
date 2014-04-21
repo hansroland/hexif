@@ -8,12 +8,18 @@
 
 import Graphics.Hexif
 import System.IO
+import System.Environment
+import System.FilePath
+
 
 main :: IO()
 main = do
-   exif <- fromFile "JG1111.jpg"
-   -- exif <- fromFile "RS4847.JPG"
+     args <- getArgs
+     if length args == 0
+       then putStrLn "usage: ???? filename"
+       else processFile $ head args
+
+processFile :: FilePath -> IO()
+processFile fn = do
+   exif <- fromFile fn
    mapM_ print (allTagsInclDebug exif)
-
-
-
