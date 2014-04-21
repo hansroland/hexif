@@ -22,7 +22,7 @@ readExif :: BL.ByteString -> Exif
 readExif bsExif6 = Exif mainDirs getWords 
     where 
       bsExif = BL.drop 6 bsExif6
-      mainDirs = map (convertDir bsExif getWords) mainFileDirs
+      mainDirs = map (convertDir IFDMain bsExif getWords) mainFileDirs
       mainFileDirs = readIFDFileDirs IFDMain offset getWords bsExif
       (getWords, offset) = readHeader bsExif
 
@@ -88,30 +88,30 @@ getIFDFileEntry (getWord16, getWord32)  = do
     return $ IFDFileEntry tagNr format (fromIntegral comps) strBsValue
 
 -- convert IFDFileDir to IFDDir
-convertDir :: BL.ByteString -> GetWords -> IFDFileDir -> IFDDir
-convertDir bsExif getWords fileEntries = map conf fileEntries
+convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDir
+convertDir dirTag bsExif getWords fileEntries = map conf fileEntries
   where 
-    conf = convertEntry bsExif getWords
+    conf = convertEntry dirTag bsExif getWords
  
 -- convert a single IFDFile entry to an IFDEntry
-convertEntry :: BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
-convertEntry bsExif getWords  fileEntry@(IFDFileEntry tag format len strBsValue) = 
+convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
+convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strBsValue) = 
    case toTag of
        Just dirTag -> convertSubEntry dirTag bsExif getWords fileEntry
-       Nothing     -> convertStdEntry bsExif getWords fileEntry
+       Nothing     -> convertStdEntry dirTag bsExif getWords fileEntry
    where toTag = toDirTag tag 
 
 -- a sub entry contains a new IFD File directory
 convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
 convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub  dirTag subDir
     where 
-      subDir = convertDir bsExif getWords fileDir 
+      subDir = convertDir dirTag bsExif getWords fileDir 
       fileDir = concat $ readIFDFileDirs dirTag offset getWords bsExif
       offset = fromIntegral (runGet getWord32 strBsValue)
 
 -- a standard entry represents a single tag and its value
-convertStdEntry :: BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
-convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
+convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
+convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
        0  -> IFDNum exifTag len                                                  -- debug entry
        1  -> IFDNum exifTag byteValue 
@@ -123,7 +123,7 @@ convertStdEntry bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len
        10 -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
        _      -> error $ "Format " ++ show format ++ " not yet implemented"  
    where 
-      exifTag = toExifTag tag
+      exifTag = toExifTag dirTag tag
       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
       offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
       byteValue = fromIntegral (runGet getWord8 strBsValue)
@@ -176,87 +176,94 @@ dirTagToWord16 IFDInterop = 0xFF03
 dirTagToWord16 IFDGPS = 0xFF04
 
 -- Convert a Word16 number to an Exif Tag
-toExifTag :: Word16 -> ExifTag
-toExifTag t 
-   | t == 0x0001 = TagInteroperabilityIndex
-   | t == 0x0002 = TagInteroperabilityVersion
-   | t == 0x0100 = TagImageWidth
-   | t == 0x0101 = TagImageLength
-   | t == 0x0102 = TagBitsPerSample
-   | t == 0x0103 = TagCompression
-   | t == 0x010e = TagImageDescription
-   | t == 0x010f = TagMake
-   | t == 0x0110 = TagModel
-   | t == 0x0112 = TagOrientation
-   | t == 0x011a = TagXResolution
-   | t == 0x011b = TagYResolution
-   | t == 0x0128 = TagResolutionUnit
-   | t == 0x0131 = TagSoftware
-   | t == 0x0132 = TagDateTime
-   | t == 0x013b = TagArtist
-   | t == 0x0201 = TagJPEGInterchangeFormat
-   | t == 0x0202 = TagJPEGInterchangeFormatLength
-   | t == 0x0213 = TagYCbCrPositioning
-   | t == 0x1001 = TagRelatedImageWidth
-   | t == 0x1002 = TagRelatedImageLength
-   | t == 0x829a = TagExposureTime
-   | t == 0x829d = TagFNumber
-   | t == 0x8822 = TagExposureProgram
-   | t == 0x8827 = TagISOSpeedRatings
-   | t == 0x9000 = TagExifVersion
-   | t == 0x9003 = TagDateTimeOriginal
-   | t == 0x9004 = TagDateTimeDigitized
-   | t == 0x9101 = TagComponentsConfiguration
-   | t == 0x9102 = TagCompressedBitsPerPixel
-   | t == 0x9201 = TagShutterSpeedValue
-   | t == 0x9202 = TagApertureValue
-   | t == 0x9203 = TagBrightnessValue
-   | t == 0x9204 = TagExposureBiasValue
-   | t == 0x9205 = TagMaxApertureValue
-   | t == 0x9207 = TagMeteringMode
-   | t == 0x9208 = TagLightSource
-   | t == 0x9209 = TagFlash
-   | t == 0x920a = TagFocalLength
-   | t == 0x927c = TagMakerNote
-   | t == 0x9286 = TagUserComment
-   | t == 0xa000 = TagFlashPixVersion
-   | t == 0xa001 = TagColorSpace
-   | t == 0xa002 = TagPixelXDimension
-   | t == 0xa003 = TagPixelYDimension
-   | t == 0xa20e = TagFocalPlaneXResolution
-   | t == 0xa20f = TagFocalPlaneYResolution
-   | t == 0xa210 = TagFocalPlaneResolutionUnit
-   | t == 0xa300 = TagFileSource
-   | t == 0xa301 = TagSceneType
-   | t == 0xa401 = TagCustomRendered
-   | t == 0xa402 = TagExposureMode
-   | t == 0xa403 = TagWhiteBalance
-   | t == 0xa404 = TagDigitalZoomRatio
-   | t == 0xa405 = TagFocalLengthIn35mmFilm
-   | t == 0xa406 = TagSceneCaptureType
-   | t == 0xa407 = TagGainControl
-   | t == 0xa408 = TagContrast
-   | t == 0xa409 = TagSaturation
-   | t == 0xa40a = TagSharpness
-   | t == 0xa420 = TagImageUniqueID
-   | t == 0xc4a5 = TagPrintImageMatching
-   | t == 0xea1c = TagPadding
-   
-   | t == 0x0000 = TagGPSVersionID
-   | t == 0x0001 = TagGPSLatitudeRef
-   | t == 0x0002 = TagGPSLatitude
-   | t == 0x0003 = TagGPSLongitudeRef
-   | t == 0x0004 = TagGPSLogitude
-   | t == 0x0005 = TagGPSAltitudeRef
-   | t == 0x0006 = TagGPSAltitude 
-   | t == 0x0007 = TagGPSTimeStamp
-   | t == 0x0012 = TagGPSMapDatum
-   | t == 0x001d = TagGPSDateStamp
+toExifTag :: DirTag -> Word16 -> ExifTag
+toExifTag IFDGPS tag = toGPSTag tag
+toExifTag _      tag = toStdTag tag
 
-   | t == 0xff01 = TagSubDir_IFDMain
-   | t == 0xff02 = TagSubDir_IFDExif
-   | t == 0xff03 = TagSubDir_IFDInterop
-   | t == 0xff04 = TagSubDir_IFDGPS
+toStdTag :: Word16 -> ExifTag
+toStdTag t = case t of
+   0x0001 -> TagInteroperabilityIndex
+   0x0002 -> TagInteroperabilityVersion
+   0x0100 -> TagImageWidth
+   0x0101 -> TagImageLength
+   0x0102 -> TagBitsPerSample
+   0x0103 -> TagCompression
+   0x010e -> TagImageDescription
+   0x010f -> TagMake
+   0x0110 -> TagModel
+   0x0112 -> TagOrientation
+   0x011a -> TagXResolution
+   0x011b -> TagYResolution
+   0x0128 -> TagResolutionUnit
+   0x0131 -> TagSoftware
+   0x0132 -> TagDateTime
+   0x013b -> TagArtist
+   0x0201 -> TagJPEGInterchangeFormat
+   0x0202 -> TagJPEGInterchangeFormatLength
+   0x0213 -> TagYCbCrPositioning
+   0x1001 -> TagRelatedImageWidth
+   0x1002 -> TagRelatedImageLength
+   0x829a -> TagExposureTime
+   0x829d -> TagFNumber
+   0x8822 -> TagExposureProgram
+   0x8827 -> TagISOSpeedRatings
+   0x9000 -> TagExifVersion
+   0x9003 -> TagDateTimeOriginal
+   0x9004 -> TagDateTimeDigitized
+   0x9101 -> TagComponentsConfiguration
+   0x9102 -> TagCompressedBitsPerPixel
+   0x9201 -> TagShutterSpeedValue
+   0x9202 -> TagApertureValue
+   0x9203 -> TagBrightnessValue
+   0x9204 -> TagExposureBiasValue
+   0x9205 -> TagMaxApertureValue
+   0x9207 -> TagMeteringMode
+   0x9208 -> TagLightSource
+   0x9209 -> TagFlash
+   0x920a -> TagFocalLength
+   0x927c -> TagMakerNote
+   0x9286 -> TagUserComment
+   0xa000 -> TagFlashPixVersion
+   0xa001 -> TagColorSpace
+   0xa002 -> TagPixelXDimension
+   0xa003 -> TagPixelYDimension
+   0xa20e -> TagFocalPlaneXResolution
+   0xa20f -> TagFocalPlaneYResolution
+   0xa210 -> TagFocalPlaneResolutionUnit
+   0xa300 -> TagFileSource
+   0xa301 -> TagSceneType
+   0xa401 -> TagCustomRendered
+   0xa402 -> TagExposureMode
+   0xa403 -> TagWhiteBalance
+   0xa404 -> TagDigitalZoomRatio
+   0xa405 -> TagFocalLengthIn35mmFilm
+   0xa406 -> TagSceneCaptureType
+   0xa407 -> TagGainControl
+   0xa408 -> TagContrast
+   0xa409 -> TagSaturation
+   0xa40a -> TagSharpness
+   0xa420 -> TagImageUniqueID
+   0xc4a5 -> TagPrintImageMatching
+   0xea1c -> TagPadding
+   0xff01 -> TagSubDir_IFDMain
+   0xff02 -> TagSubDir_IFDExif
+   0xff03 -> TagSubDir_IFDInterop
+   _ -> TagTagUnknown t
 
-   | otherwise = TagTagUnknown t
+
+toGPSTag :: Word16 -> ExifTag
+toGPSTag t = case t of
+   0x0000 -> TagGPSVersionID
+   0x0001 -> TagGPSLatitudeRef
+   0x0002 -> TagGPSLatitude
+   0x0003 -> TagGPSLongitudeRef
+   0x0004 -> TagGPSLogitude
+   0x0005 -> TagGPSAltitudeRef
+   0x0006 -> TagGPSAltitude 
+   0x0007 -> TagGPSTimeStamp
+   0x0012 -> TagGPSMapDatum
+   0x001d -> TagGPSDateStamp
+   0xff04 -> TagSubDir_IFDGPS
+   _ -> TagTagUnknown t
+
 
