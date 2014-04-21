@@ -41,6 +41,9 @@ ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
 ppRationalValue TagCompressedBitsPerPixel r = ' ' : fmtRat r
 ppRationalValue TagExposureBiasValue r = ppExposureBiasValue r
 ppRationalValue TagFocalLength r = ppFocalLength r
+ppRationalValue TagMaxApertureValue r = ppMaxApertureValue r
+ppRationalValue TagDigitalZoomRatio r = printf "%.2f" (rat2Float r)
+ppRationalValue TagBrightnessValue r = ppBrightnessValue r
 ppRationalValue _  rat = fmtRat rat
 
 --convert a rational to a float
@@ -73,7 +76,20 @@ ppExposureBiasValue r = printf "%.2f EV" (rat2Float r)
 -- Pretty print the value of the tag FocalLength
 ppFocalLength :: (Int, Int) -> String
 ppFocalLength r = printf "%.1f mm" (rat2Float r)
-    
+
+-- Pretty print the value of the tag MaxApertureValue
+ppMaxApertureValue :: (Int, Int) -> String
+ppMaxApertureValue r = printf "%.2f EV (f/%.1f)" f pf
+  where 
+    f = rat2Float r
+    pf = 2 ** (f / 2)
+
+
+ppBrightnessValue :: (Int, Int) -> String
+ppBrightnessValue r = printf "%.2f EV (%.2f cd/m^2)" f pf
+  where
+    f = rat2Float r
+    pf = 1 / (pi * 0.3048 * 0.3048) * 2 ** f
 
 -- ----------------------------------------------------------------------------
 -- Pretty Printers for Undefined Values
@@ -191,10 +207,10 @@ ppTagExposureProgram n = case n of
     2 -> "Normal program"
     3 -> "Aperture priority"
     4 -> "Shutter priority"
-    5 -> "Creative program" -- (biased toward depth of field)
-    6 -> "Action program"   -- (biased toward fast shutter speed)
-    7 -> "Portrait mode"    -- (for closeup photos with the background out of focus)
-    8 -> "Landscape mode"   -- (for landscape photos with the background in focus)
+    5 -> "Creative program (biased toward depth of field)"
+    6 -> "Action program (biased toward fast shutter speed)"
+    7 -> "Portrait mode (for closeup photos with the background out of focus)"
+    8 -> "Landscape mode (for landscape photos with the background in focus)"
     _ -> undef n
 
 
@@ -299,7 +315,7 @@ ppSceneCaptureType n = case n of
 
 ppTagGainControl :: Int -> String
 ppTagGainControl n = case n of
-    0 -> "None"
+    0 -> "Normal"
     1 -> "Low gain up"
     2 -> "High gain up"
     3 -> "Low gain down"

@@ -116,7 +116,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagSharpness
              | TagImageUniqueID
              | TagPrintImageMatching
-
+             | TagPadding
              | TagGPSVersionID
              | TagGPSLatitudeRef
              | TagGPSLatitude
