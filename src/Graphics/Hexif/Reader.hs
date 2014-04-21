@@ -115,7 +115,7 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
    case format of
        0  -> IFDNum exifTag len                                                  -- debug entry
        1  -> IFDNum exifTag byteValue 
-       2  -> IFDStr exifTag (stringValue tag len strBsValue getWord32 bsExif)
+       2  -> IFDStr exifTag (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
        3  -> IFDNum exifTag offsetOrValue16 
        4  -> IFDNum exifTag offsetOrValue32
        5  -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
@@ -140,9 +140,11 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
 
 -- read out a string value 
 -- Note: TagInteroperabilityIndex has a non standard representation -> Special case for 1
-stringValue :: Word16 -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
-stringValue  1  len strBsValue _  _       = take 3 (unpackLazyBS strBsValue)
-stringValue tag len strBsValue getWord32 bsExif = runGet (getStringValue len offset) bsExif
+stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
+stringValue IFDGPS TagGPSLatitudeRef len strBsValue         _  _       = take 1 (unpackLazyBS strBsValue)
+stringValue IFDGPS TagGPSLongitudeRef len strBsValue        _  _       = take 1 (unpackLazyBS strBsValue)
+stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _       = take 3 (unpackLazyBS strBsValue)
+stringValue dirTag _ len strBsValue getWord32 bsExif = runGet (getStringValue len offset) bsExif
     where    
         offset = fromIntegral (runGet getWord32 strBsValue)
         getStringValue :: Int -> Int -> Get String
