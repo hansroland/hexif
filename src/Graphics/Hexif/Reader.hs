@@ -240,6 +240,7 @@ toExifTag t
    | t == 0xa40a = TagSharpness
    | t == 0xa420 = TagImageUniqueID
    | t == 0xc4a5 = TagPrintImageMatching
+   | t == 0xea1c = TagPadding
    
    | t == 0x0000 = TagGPSVersionID
    | t == 0x0001 = TagGPSLatitudeRef
