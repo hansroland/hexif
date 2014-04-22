@@ -7,7 +7,7 @@ module Graphics.Hexif.Reader where
 import Graphics.Hexif.DataExif
 import Graphics.Hexif.Utils
 
-import Data.Char (chr)
+import Data.Char (chr, ord)
 import Data.List (partition)
 
 import Data.Binary
@@ -136,17 +136,18 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
       -- 0x0007 = undefined
       -- 0x000A = signed rationale
 
--- subfunctions of convert  
+-- subfunctions of convert
 
 -- read out a string value 
--- Note: TagInteroperabilityIndex has a non standard representation -> Special case for 1
+-- Note: Some tags have non standard representation -> Special cases
 stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
 stringValue IFDGPS TagGPSLatitudeRef len strBsValue         _  _       = take 1 (unpackLazyBS strBsValue)
 stringValue IFDGPS TagGPSLongitudeRef len strBsValue        _  _       = take 1 (unpackLazyBS strBsValue)
 stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _       = take 3 (unpackLazyBS strBsValue)
-stringValue dirTag _ len strBsValue getWord32 bsExif = runGet (getStringValue len offset) bsExif
-    where    
+stringValue dirTag _ len strBsValue getWord32 bsExif = clean $ runGet (getStringValue len offset) bsExif
+    where
         offset = fromIntegral (runGet getWord32 strBsValue)
+        clean = reverse . dropWhile (\c -> ord c == 0) . reverse
         getStringValue :: Int -> Int -> Get String
         getStringValue len offset = do
             skip offset
