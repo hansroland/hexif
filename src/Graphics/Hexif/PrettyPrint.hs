@@ -157,8 +157,9 @@ ppNumValue tag n = case tag of
     TagContrast          -> ppTagContrastSharpness n
     TagSaturation        -> ppTagSaturation n
     TagSharpness         -> ppTagContrastSharpness n
-    TagSensingMethod    ->  ppTagSensingMethod n
+    TagSensingMethod     -> ppTagSensingMethod n
     TagSubjectDistanceRange -> ppTagSubjectDistanceRange n
+    TagGPSAltitudeRef    -> ppTagGPSAltitudeRef n
     _                    -> show n
 
 -- pretty print of tag Resolution Unit
@@ -356,6 +357,12 @@ ppTagSubjectDistanceRange n = case n of
     1 -> "Macro"
     2 -> "Close view"
     3 -> "Distant view"
+    _ -> undef n
+
+ppTagGPSAltitudeRef :: Int -> String
+ppTagGPSAltitudeRef n = case n of
+    0 -> "Sea level"
+    1 -> "Below sea level"
     _ -> undef n
 
 undef :: Int -> String
