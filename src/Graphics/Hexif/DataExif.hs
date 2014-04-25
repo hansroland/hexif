@@ -75,6 +75,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagYCbCrPositioning
              | TagRelatedImageWidth
              | TagRelatedImageLength
+             | TagCopyright
              | TagExposureTime
              | TagFNumber
              | TagExposureProgram
@@ -115,6 +116,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagContrast
              | TagSaturation
              | TagSharpness
+             | TagSubjectDistanceRange
              | TagImageUniqueID
              | TagPrintImageMatching
              | TagPanasonicTitle1

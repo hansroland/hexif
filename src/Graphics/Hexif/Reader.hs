@@ -206,6 +206,7 @@ toStdTag t = case t of
    0x0213 -> TagYCbCrPositioning
    0x1001 -> TagRelatedImageWidth
    0x1002 -> TagRelatedImageLength
+   0x8298 -> TagCopyright
    0x829a -> TagExposureTime
    0x829d -> TagFNumber
    0x8822 -> TagExposureProgram
@@ -246,6 +247,7 @@ toStdTag t = case t of
    0xa408 -> TagContrast
    0xa409 -> TagSaturation
    0xa40a -> TagSharpness
+   0xa40c -> TagSubjectDistanceRange
    0xa420 -> TagImageUniqueID
    0xc4a5 -> TagPrintImageMatching
    0xc6d2 -> TagPanasonicTitle1

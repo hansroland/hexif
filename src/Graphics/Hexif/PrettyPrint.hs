@@ -157,7 +157,8 @@ ppNumValue tag n = case tag of
     TagContrast          -> ppTagContrastSharpness n
     TagSaturation        -> ppTagSaturation n
     TagSharpness         -> ppTagContrastSharpness n
-    TagSensingMethod    -> ppTagSensingMethod n
+    TagSensingMethod    ->  ppTagSensingMethod n
+    TagSubjectDistanceRange -> ppTagSubjectDistanceRange n
     _                    -> show n
 
 -- pretty print of tag Resolution Unit
@@ -347,6 +348,14 @@ ppTagSensingMethod n = case n of
     5 -> "Color sequential area sensor"
     7 -> "Trilinear sensor"
     8 -> "Color sequential linear sensor"
+    _ -> undef n
+
+ppTagSubjectDistanceRange :: Int-> String
+ppTagSubjectDistanceRange n = case n of
+    0 -> "Unknown"
+    1 -> "Macro"
+    2 -> "Close view"
+    3 -> "Distant view"
     _ -> undef n
 
 undef :: Int -> String
