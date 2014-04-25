@@ -102,6 +102,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagFocalPlaneXResolution
              | TagFocalPlaneYResolution
              | TagFocalPlaneResolutionUnit
+             | TagSensingMethod
              | TagFileSource
              | TagSceneType
              | TagCustomRendered

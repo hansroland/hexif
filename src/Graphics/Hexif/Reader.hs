@@ -233,6 +233,7 @@ toStdTag t = case t of
    0xa20e -> TagFocalPlaneXResolution
    0xa20f -> TagFocalPlaneYResolution
    0xa210 -> TagFocalPlaneResolutionUnit
+   0xa217 -> TagSensingMethod
    0xa300 -> TagFileSource
    0xa301 -> TagSceneType
    0xa401 -> TagCustomRendered

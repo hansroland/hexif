@@ -157,6 +157,7 @@ ppNumValue tag n = case tag of
     TagContrast          -> ppTagContrastSharpness n
     TagSaturation        -> ppTagSaturation n
     TagSharpness         -> ppTagContrastSharpness n
+    TagSensingMethod    -> ppTagSensingMethod n
     _                    -> show n
 
 -- pretty print of tag Resolution Unit
@@ -218,7 +219,7 @@ ppTagMeteringMode :: Int -> String
 ppTagMeteringMode n = case n of
     0 -> "Unknown"
     1 -> "Average"
-    2 -> "CenterWeightedAverage"
+    2 -> "Center-weighted average"
     3 -> "Spot"
     4 -> "MultiSpot"
     5 -> "Pattern"
@@ -334,6 +335,18 @@ ppTagSaturation n = case n of
     0 -> "Normal"
     1 -> "Low saturation"
     2 -> "High saturation"
+    _ -> undef n
+
+
+ppTagSensingMethod :: Int -> String
+ppTagSensingMethod n = case n of
+    1 -> "Not defined"
+    2 -> "One-chip color area sensor"
+    3 -> "Two-chip color area sensor"
+    4 -> "Three-chip color area sensor"
+    5 -> "Color sequential area sensor"
+    7 -> "Trilinear sensor"
+    8 -> "Color sequential linear sensor"
     _ -> undef n
 
 undef :: Int -> String
