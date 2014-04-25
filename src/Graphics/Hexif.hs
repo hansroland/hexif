@@ -33,7 +33,7 @@ import Graphics.Hexif.PrettyPrint
 import qualified Data.ByteString.Lazy as BL
 import System.FilePath
 
--- Return a list of all ExifFields (but without debug files)
+-- Return a list of all ExifFields (but without debug tags)
 allTags :: Exif -> [ExifField]
 allTags exif = filter removeDebugs (allTagsInclDebug exif)
   where
