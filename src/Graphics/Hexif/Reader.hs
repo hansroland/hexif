@@ -9,6 +9,7 @@ import Graphics.Hexif.Utils
 
 import Data.Char (chr, ord)
 import Data.List (partition)
+import Control.Monad(replicateM)
 
 import Data.Binary
 import Data.Binary.Get
@@ -118,9 +119,9 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
        2  -> IFDStr exifTag (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
        3  -> IFDNum exifTag offsetOrValue16 
        4  -> IFDNum exifTag offsetOrValue32
-       5  -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
+       5  -> IFDRat exifTag (rationalValues len offsetOrValue32 bsExif words)
        7  -> IFDUdf exifTag len (unpackLazyBS strBsValue)
-       10 -> IFDRat exifTag (rationalValue offsetOrValue32 bsExif words)
+       10 -> IFDRat exifTag (rationalValues len offsetOrValue32 bsExif words)
        _      -> error $ "Format " ++ show format ++ " not yet implemented"  
    where 
       exifTag = toExifTag dirTag tag
@@ -160,12 +161,15 @@ stringValue dirTag _ len strBsValue getWord32 bsExif = clean $ runGet (getString
 directByte :: BL.ByteString -> String
 directByte strBsValue = take 1 (unpackLazyBS strBsValue)
 
-rationalValue :: Int -> BL.ByteString -> GetWords -> (Int, Int)
-rationalValue offset bsExif words = runGet (getRationaleValue words offset) bsExif
+rationalValues :: Int -> Int -> BL.ByteString -> GetWords -> [(Int, Int)]
+rationalValues comps offset bsExif words = runGet (getRationalValues words comps offset) bsExif
     where
-        getRationaleValue :: GetWords -> Int -> Get (Int, Int)
-        getRationaleValue words@(getWord16, getWord32) offset = do
+        getRationalValues :: GetWords -> Int -> Int -> Get [(Int,Int)]
+        getRationalValues words comps offset = do
             skip offset
+            replicateM comps (getRationalValue words) 
+        getRationalValue :: GetWords -> Get (Int, Int)
+        getRationalValue words@(getWord16, getWord32) = do
             num <- getWord32
             denum <- getWord32
             return (fromIntegral num, fromIntegral denum)

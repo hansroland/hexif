@@ -26,7 +26,7 @@ instance Show ExifField where
 type IFDDir = [IFDEntry]
 
 -- Definition of a logical IFD Entry
-data IFDEntry = IFDRat ExifTag (Int, Int)
+data IFDEntry = IFDRat ExifTag [(Int, Int)]
               | IFDNum ExifTag Int
               | IFDStr ExifTag String
               | IFDUdf ExifTag Int String

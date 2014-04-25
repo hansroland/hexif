@@ -26,7 +26,7 @@ flatten ((IFDSub tag ifdDir) : ds) = flatten ds ++ flatten ifdDir
 flatten (d : ds) = d : flatten ds
 
 ppIFDEntry :: IFDEntry -> ExifField 
-ppIFDEntry (IFDRat tag numdenom) = ExifField tag (ppRationalValue tag numdenom)
+ppIFDEntry (IFDRat tag rats) = ExifField tag (ppRationalValues tag rats)
 ppIFDEntry (IFDNum tag nVal) = ExifField tag (ppNumValue tag nVal)
 ppIFDEntry (IFDStr tag strVal) = ExifField tag strVal
 ppIFDEntry (IFDUdf tag len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
@@ -35,6 +35,13 @@ ppIFDEntry (IFDSub tag ifdDir) = error $ "Directory encountered " ++ show tag
 -- ----------------------------------------------------------------------------
 -- Pretty Printers for RationalValues
 -- ----------------------------------------------------------------------------
+ppRationalValues :: ExifTag -> [(Int,Int)] -> String
+ppRationalValues tag []       = "No values"
+ppRationalValues tag (r : []) = ppRationalValue tag r
+ppRationalValues tag rats     = concat $ map fmtRat' rats
+    where fmtRat' r = fmtRat r ++ " "
+
+
 ppRationalValue :: ExifTag -> (Int,Int) -> String
 ppRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
 ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
@@ -183,7 +190,7 @@ ppOrientation n = case n of
     8 -> "Left-bottom"
     _ -> undef n
 
---pretty print of tag YCbCrPositioning
+-- pretty print of tag YCbCrPositioning
 ppYCbCrPositioning :: Int -> String
 ppYCbCrPositioning n = case n of
     1 -> "Centered"
