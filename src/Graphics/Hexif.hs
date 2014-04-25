@@ -10,9 +10,10 @@
 -- See: 
 --    http://www.media.mit.edu/pia/Research/deepview/exif.html
 --    http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html
---    http://search.cpan.org/~rjbs/Image-MetaData-JPEG-0.155/lib/Image/MetaData/JPEG.pod   
+--    http://search.cpan.org/~rjbs/Image-MetaData-JPEG-0.155/lib/Image/MetaData/JPEG.pod
+--    http://www.kodak.com/global/plugins/acrobat/en/service/digCam/exifStandard2.pdf
 --
---    
+--
 --
 -- -----------------------------------------------------------------------------
 module Graphics.Hexif 
