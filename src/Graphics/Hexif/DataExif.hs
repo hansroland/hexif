@@ -116,6 +116,8 @@ data ExifTag = TagInteroperabilityIndex
              | TagSharpness
              | TagImageUniqueID
              | TagPrintImageMatching
+             | TagPanasonicTitle1
+             | TagPanasonicTitle2
              | TagPadding
              | TagGPSVersionID
              | TagGPSLatitudeRef

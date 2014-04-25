@@ -247,6 +247,8 @@ toStdTag t = case t of
    0xa40a -> TagSharpness
    0xa420 -> TagImageUniqueID
    0xc4a5 -> TagPrintImageMatching
+   0xc6d2 -> TagPanasonicTitle1
+   0xc6d3 -> TagPanasonicTitle2
    0xea1c -> TagPadding
    0xff01 -> TagSubDir_IFDMain
    0xff02 -> TagSubDir_IFDExif
