@@ -275,7 +275,7 @@ toGPSTag t = case t of
    0x0001 -> TagGPSLatitudeRef
    0x0002 -> TagGPSLatitude
    0x0003 -> TagGPSLongitudeRef
-   0x0004 -> TagGPSLogitude
+   0x0004 -> TagGPSLongitude
    0x0005 -> TagGPSAltitudeRef
    0x0006 -> TagGPSAltitude 
    0x0007 -> TagGPSTimeStamp

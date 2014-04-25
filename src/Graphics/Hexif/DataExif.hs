@@ -127,7 +127,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagGPSLatitudeRef
              | TagGPSLatitude
              | TagGPSLongitudeRef
-             | TagGPSLogitude
+             | TagGPSLongitude
              | TagGPSAltitudeRef
              | TagGPSAltitude 
              | TagGPSTimeStamp

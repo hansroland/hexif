@@ -38,7 +38,11 @@ ppIFDEntry (IFDSub tag ifdDir) = error $ "Directory encountered " ++ show tag
 ppRationalValues :: ExifTag -> [(Int,Int)] -> String
 ppRationalValues tag []       = "No values"
 ppRationalValues tag (r : []) = ppRationalValue tag r
-ppRationalValues tag rats     = concat $ map fmtRat' rats
+ppRationalValues TagGPSLatitude rs      = ppGPSLongLatt rs
+ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
+ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
+ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
+ppRationalValues tag rs     = concat $ map fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
 
@@ -97,6 +101,12 @@ ppBrightnessValue r = printf "%.2f EV (%.2f cd/m^2)" f pf
   where
     f = rat2Float r
     pf = 1 / (pi * 0.3048 * 0.3048) * 2 ** f
+
+ppGPSLongLatt :: [(Int,Int)] -> String
+ppGPSLongLatt rs = fmtLL $ map rat2Float rs
+  where 
+    fmtLL rs@(d:m:s:[]) = printf "%.0f, %.0f, %.4f" d m s
+    fmt  _ = "verify data format"
 
 -- ----------------------------------------------------------------------------
 -- Pretty Printers for Undefined Values
