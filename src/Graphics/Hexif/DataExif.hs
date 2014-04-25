@@ -122,6 +122,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagPanasonicTitle1
              | TagPanasonicTitle2
              | TagPadding
+             -- GPS Tags
              | TagGPSVersionID
              | TagGPSLatitudeRef
              | TagGPSLatitude
@@ -130,10 +131,15 @@ data ExifTag = TagInteroperabilityIndex
              | TagGPSAltitudeRef
              | TagGPSAltitude 
              | TagGPSTimeStamp
+             | TagGPSImgDirectionRef
+             | TagGPSImgDirection
              | TagGPSMapDatum
+             | TagGPSDestLatitudeRef
+             | TagGPSDestLatitude
+             | TagGPSDestLongitudeRef
+             | TagGPSDestLongitude
              | TagGPSDateStamp
-
-
+             -- Subdirectory tags
 			 | TagSubDir_IFDMain
              | TagSubDir_IFDExif
              | TagSubDir_IFDGPS

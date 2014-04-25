@@ -141,9 +141,12 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
 -- read out a string value 
 -- Note: Some tags have non standard representation -> Special cases
 stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
-stringValue IFDGPS TagGPSLatitudeRef len strBsValue         _  _       = take 1 (unpackLazyBS strBsValue)
-stringValue IFDGPS TagGPSLongitudeRef len strBsValue        _  _       = take 1 (unpackLazyBS strBsValue)
-stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _       = take 3 (unpackLazyBS strBsValue)
+stringValue IFDGPS TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
+stringValue IFDGPS TagGPSLongitudeRef _ strBsValue        _  _       = directByte strBsValue
+stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue
+stringValue IFDGPS TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
+stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue        _  _       = directByte strBsValue
+stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
 stringValue dirTag _ len strBsValue getWord32 bsExif = clean $ runGet (getStringValue len offset) bsExif
     where
         offset = fromIntegral (runGet getWord32 strBsValue)
@@ -153,6 +156,9 @@ stringValue dirTag _ len strBsValue getWord32 bsExif = clean $ runGet (getString
             skip offset
             lazy <- getLazyByteString $ fromIntegral (len - 1) 
             return $ unpackLazyBS lazy
+
+directByte :: BL.ByteString -> String
+directByte strBsValue = take 1 (unpackLazyBS strBsValue)
 
 rationalValue :: Int -> BL.ByteString -> GetWords -> (Int, Int)
 rationalValue offset bsExif words = runGet (getRationaleValue words offset) bsExif
@@ -269,7 +275,13 @@ toGPSTag t = case t of
    0x0005 -> TagGPSAltitudeRef
    0x0006 -> TagGPSAltitude 
    0x0007 -> TagGPSTimeStamp
+   0x0010 -> TagGPSImgDirectionRef
+   0x0011 -> TagGPSImgDirection
    0x0012 -> TagGPSMapDatum
+   0x0013 -> TagGPSDestLatitudeRef
+   0x0014 -> TagGPSDestLatitude
+   0x0015 -> TagGPSDestLongitudeRef
+   0x0016 -> TagGPSDestLongitude
    0x001d -> TagGPSDateStamp
    0xff04 -> TagSubDir_IFDGPS
    _ -> TagTagUnknown t
