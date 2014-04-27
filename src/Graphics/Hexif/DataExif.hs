@@ -35,9 +35,11 @@ data DirTag = IFDMain
          | IFDInterop
      deriving (Eq, Show)
 
+-- | Shortcut for the tuple to read 16 or 32 bits according to rhe Intel or 
+--   Motorola format.
 type GetWords = (Get Word16, Get Word32)
 
-
+-- | A list of file entries builds a directory.
 type IFDFileDir = [IFDFileEntry]
      
 

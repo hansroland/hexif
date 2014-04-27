@@ -1,6 +1,4 @@
--- ----------------------------------------------------------------------------
--- ReadJpeg - Read a jpeg file and split it into segments
--- ----------------------------------------------------------------------------
+-- | Module to read a jpeg file and split it into segments
 module Graphics.Hexif.Jpeg 
   ( Jpeg
   , readJpegFromFile
@@ -15,24 +13,18 @@ import Data.Binary.Get   {-( Get
                       , skip
                       , bytesRead
                       )   -}
--- import Data.Binary.Put
--- import Control.Monad
+
 import System.IO
 import qualified Data.ByteString.Lazy as BL
--- import qualified Data.ByteString as B
 
--- import Hexdump (prettyHex)
--- import Numeric (showHex)
-
--- -----------------------------------------------------------------------------------
--- Data Types and simple instances
--- -----------------------------------------------------------------------------------
+-- | A JPEG file is a list of so called segments
 data Jpeg = Jpeg
     { segments :: [JpegSegment]
  -- , imageData :: B.ByteString      -- later needed for write version
     } 
     deriving Eq
 
+-- | A segment contains an identifying marker and a length
 data JpegSegment = JpegSegment
     { segMarker :: Int 
     , segLen :: Int
@@ -53,18 +45,18 @@ showSegment seg =
    " data   = " ++ prettyHex (B.take 32 $segData seg)
 -}
   
--- Read a Jpeg value from a file
+-- | Read a Jpeg value from a file
 readJpegFromFile :: String -> IO Jpeg
 readJpegFromFile fn = do
    bsJpeg <- BL.readFile fn
    return $ readJpeg bsJpeg
 
 
--- Extract Exif segment
+-- | Extract the Exif segment from a JPEG value
 extractExif :: Jpeg -> BL.ByteString
 extractExif jpeg = segData $ head (filter (\seg -> segMarker seg == 0xFFE1) (segments jpeg))
 
--- Read a Jpeg value form a ByteString  
+-- | Read a Jpeg value form a lazy ByteString  
 readJpeg :: BL.ByteString -> Jpeg
 readJpeg bytes = runGet getJpeg bytes
   where   
@@ -74,7 +66,7 @@ readJpeg bytes = runGet getJpeg bytes
         segs <- getSegments 
         return $ Jpeg segs 
 
--- get all the segments
+-- | get all the segments
 getSegments :: Get [JpegSegment]
 getSegments = do
     seg <- getSegment
@@ -84,7 +76,7 @@ getSegments = do
           segs <- getSegments
           return $ seg : segs
 
--- get the next segment
+-- | get the next segment
 getSegment :: Get JpegSegment
 getSegment = do
      marker <- getWord16be
@@ -92,20 +84,6 @@ getSegment = do
      len <- getWord16be 
      segData <- getLazyByteString (fromIntegral len - 2)
      return $ JpegSegment (fromIntegral marker) (fromIntegral len) segData (fromIntegral offset - 2)
-
-{-
-example3 :: IO()
-example3 = do
-    input <- BL.readFile "JG1111.jpg"
-    print $ readJpeg input
-
-example4 :: IO()
-example4 = do
-    input <- BL.readFile "JG1111.jpg"
-    let res = runGet readJpeg input
-    let exif = head (filter (\seg -> intSegMarker seg == 0xFFE1) res)
-    B.writeFile "JG1111.exif" $ segData exif
--}    
 
 
 

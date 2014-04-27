@@ -1,17 +1,10 @@
--- -----------------------------------------------------------------------------
--- PrettyPrintInt.hs
--- -----------------------------------------------------------------------------
---
--- This module pretty prints all the exif values with an integer code
---
--- -----------------------------------------------------------------------------
+-- | This module pretty prints all the exif values with an integer code
 module Graphics.Hexif.PrettyPrintInt where
 
 import Graphics.Hexif.DataExif
 
--- -----------------------------------------------------------------------------
--- PrettyPrint functions for Integer values
--- -----------------------------------------------------------------------------
+
+-- | PrettyPrint functions for all Integer values.
 ppNumValue :: ExifTag -> Int -> String
 ppNumValue tag n = case tag of
     TagCompression       -> ppCompression n
@@ -36,7 +29,7 @@ ppNumValue tag n = case tag of
     TagGPSAltitudeRef    -> ppTagGPSAltitudeRef n
     _                    -> show n
 
--- pretty print of tag Resolution Unit
+-- | Pretty printer for the tag Resolution Unit.
 ppResolutionUnit :: Int -> String
 ppResolutionUnit n = case n of
     1 -> "No absolute unit"
@@ -44,7 +37,7 @@ ppResolutionUnit n = case n of
     3 -> "Centimeter"
     _ -> undef n
 
--- pretty print of tag Orientation 
+-- | Pretty print for the tag Orientation.
 ppOrientation :: Int -> String
 ppOrientation n = case n of
     1 -> "Top-left"
@@ -57,14 +50,14 @@ ppOrientation n = case n of
     8 -> "Left-bottom"
     _ -> undef n
 
--- pretty print of tag YCbCrPositioning
+-- | Pretty printer for the tag YCbCrPositioning.
 ppYCbCrPositioning :: Int -> String
 ppYCbCrPositioning n = case n of
     1 -> "Centered"
     2 -> "Co-sited"
     _ -> undef n
 
--- pretty print of tag Compression 
+-- | Pretty printer for the tag Compression.
 ppCompression :: Int -> String
 ppCompression n = case n of
     1 -> "No compression"
@@ -76,7 +69,7 @@ ppCompression n = case n of
     7 -> "JPEG (new style)"
     _ -> undef n
 
--- pretty print of tag ExposureProgram
+-- | Pretty printer for the tag ExposureProgram.
 ppTagExposureProgram :: Int -> String
 ppTagExposureProgram n = case n of
     0 -> "Not defined"
@@ -91,6 +84,7 @@ ppTagExposureProgram n = case n of
     _ -> undef n
 
 
+-- | Pretty printer for the tag MeteringMode.
 ppTagMeteringMode :: Int -> String
 ppTagMeteringMode n = case n of
     0 -> "Unknown"
@@ -103,6 +97,7 @@ ppTagMeteringMode n = case n of
     255 -> "other"
     _ -> undef n
 
+-- | Pretty printer for the tag LightSource.
 ppTagLightSource :: Int -> String
 ppTagLightSource n = case n of
     0 -> "Unknown"
@@ -128,7 +123,7 @@ ppTagLightSource n = case n of
     255 -> "Other light source"
     _ -> undef n
 
-
+-- | Pretty printer for the tag Flash.
 ppTagFlash :: Int -> String
 ppTagFlash n = case n of
     0x0000 -> "Flash did not fire"
@@ -155,18 +150,21 @@ ppTagFlash n = case n of
     0x005F -> "Flash fired, auto mode, return light detected, red-eye reduction mode"
     _      -> undef n
 
+-- | Pretty printer for the tag ColorSpace.
 ppTagColorSpace :: Int -> String
 ppTagColorSpace n = case n of
     1     -> "sRGB"
     65535 -> "Uncalibrated"
     _     -> undef n 
 
+-- | Pretty printer for the tag CustomRendered.
 ppCustomRendered :: Int -> String
 ppCustomRendered n = case n of
     0 -> "Normal process"
     1 -> "Custom process"
     _ -> undef n
 
+-- | Pretty printer for the tag ExposureMode.
 ppTagExposureMode :: Int -> String
 ppTagExposureMode n = case n of
     0 -> "Auto exposure"
@@ -174,14 +172,14 @@ ppTagExposureMode n = case n of
     2 -> "Auto bracket"
     _ -> undef n
 
--- pretty print of tag WhiteBalance
+-- | Pretty printer of tag WhiteBalance.
 ppTagWhiteBalance :: Int -> String
 ppTagWhiteBalance n = case n of 
     0 -> "Auto white balance"
     1 -> "Manual white balance"
     _ -> undef n
 
--- pretty print of tag SceneCaptureType
+-- | Pretty printer of tag SceneCaptureType.
 ppSceneCaptureType :: Int -> String
 ppSceneCaptureType n = case n of
     0 -> "Standard"
@@ -190,6 +188,7 @@ ppSceneCaptureType n = case n of
     3 -> "Night scene"
     _ -> undef n
 
+-- | Pretty printer for the tag GainControl.
 ppTagGainControl :: Int -> String
 ppTagGainControl n = case n of
     0 -> "Normal"
@@ -199,6 +198,7 @@ ppTagGainControl n = case n of
     4 -> "High gain down"
     _ -> undef n
 
+-- | Pretty printer for the tag ContrastSharpness.
 ppTagContrastSharpness :: Int -> String
 ppTagContrastSharpness n = case n of
     0 -> "Normal"
@@ -206,6 +206,7 @@ ppTagContrastSharpness n = case n of
     2 -> "Hard"
     _ -> undef n
 
+-- | Pretty printer for the tag Saturation.
 ppTagSaturation :: Int -> String
 ppTagSaturation n = case n of
     0 -> "Normal"
@@ -213,7 +214,7 @@ ppTagSaturation n = case n of
     2 -> "High saturation"
     _ -> undef n
 
-
+-- | Pretty printer for the tag SensingMethod
 ppTagSensingMethod :: Int -> String
 ppTagSensingMethod n = case n of
     1 -> "Not defined"
@@ -225,6 +226,7 @@ ppTagSensingMethod n = case n of
     8 -> "Color sequential linear sensor"
     _ -> undef n
 
+-- | Pretty printer for the tag SucjectDistanceRange
 ppTagSubjectDistanceRange :: Int-> String
 ppTagSubjectDistanceRange n = case n of
     0 -> "Unknown"
@@ -233,11 +235,13 @@ ppTagSubjectDistanceRange n = case n of
     3 -> "Distant view"
     _ -> undef n
 
+-- | Pretty printer for the tag GPSAltitudeRef
 ppTagGPSAltitudeRef :: Int -> String
 ppTagGPSAltitudeRef n = case n of
     0 -> "Sea level"
     1 -> "Below sea level"
     _ -> undef n
 
+-- | Report a tag we don't process properly. We don't yet know the tag!!
 undef :: Int -> String
 undef n = "undefined " ++  show n

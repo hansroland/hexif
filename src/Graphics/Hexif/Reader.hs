@@ -1,6 +1,5 @@
--- -----------------------------------------------------------------------------
--- Reader.hs Functions to read in an Exif structure
--- -----------------------------------------------------------------------------
+-- | This module contains the code to read (or parse) the exif file.
+-- 
 
 module Graphics.Hexif.Reader where
 
@@ -17,8 +16,8 @@ import qualified Data.ByteString.Lazy as BL
 
 type Offset = Int
 
--- read in an Exif file.
--- The ByteString parameter starts with the EXIF__ constant
+-- | Read whole Exif file into our Haskell exif value.
+-- The ByteString parameter starts with the EXIF__ constant.
 readExif :: BL.ByteString -> Exif
 readExif bsExif6 = Exif mainDirs getWords 
     where 
@@ -27,7 +26,7 @@ readExif bsExif6 = Exif mainDirs getWords
       mainFileDirs = readIFDFileDirs IFDMain offset getWords bsExif
       (getWords, offset) = readHeader bsExif
 
--- Read the header data from a ByteString representing an EXIF file 
+-- | Read the header data from a ByteString representing an EXIF file 
 readHeader :: BL.ByteString -> (GetWords, Offset)
 readHeader = runGet getHeader
   where 
@@ -43,7 +42,7 @@ readHeader = runGet getHeader
         offset <- snd getWords
         return (getWords, fromIntegral offset)
 
--- read chained FileDirs from a given offset
+-- | Read chained FileDirs from a given offset.
 readIFDFileDirs :: DirTag -> Offset -> GetWords -> BL.ByteString -> [IFDFileDir]
 readIFDFileDirs dirTag offset getWords bsExif = 
   if offset == 0
@@ -188,11 +187,12 @@ dirTagToWord16 IFDExif = 0xFF02
 dirTagToWord16 IFDInterop = 0xFF03
 dirTagToWord16 IFDGPS = 0xFF04
 
--- Convert a Word16 number to an Exif Tag
+-- | Convert a Word16 number together with its directory tag to an Exif Tag.
 toExifTag :: DirTag -> Word16 -> ExifTag
 toExifTag IFDGPS tag = toGPSTag tag
 toExifTag _      tag = toStdTag tag
 
+-- | Convert a Word16 number to standard Exif tag.
 toStdTag :: Word16 -> ExifTag
 toStdTag t = case t of
    0x0001 -> TagInteroperabilityIndex
@@ -268,7 +268,7 @@ toStdTag t = case t of
    0xff03 -> TagSubDir_IFDInterop
    _ -> TagTagUnknown t
 
-
+-- | Convert a Word16 number to an GPS tag
 toGPSTag :: Word16 -> ExifTag
 toGPSTag t = case t of
    0x0000 -> TagGPSVersionID
