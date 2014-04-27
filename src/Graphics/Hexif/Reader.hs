@@ -88,14 +88,14 @@ getIFDFileEntry (getWord16, getWord32)  = do
     strBsValue <- getLazyByteString 4
     return $ IFDFileEntry tagNr format (fromIntegral comps) strBsValue
 
--- convert IFDFileDir to IFDDir
-convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDir
+-- convert IFDFileDir to IFDDataDir
+convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDataDir
 convertDir dirTag bsExif getWords fileEntries = map conf fileEntries
   where 
     conf = convertEntry dirTag bsExif getWords
  
--- convert a single IFDFile entry to an IFDEntry
-convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
+-- convert a single IFDFile entry to an IFDData
+convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
 convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strBsValue) = 
    case toTag of
        Just dirTag -> convertSubEntry dirTag bsExif getWords fileEntry
@@ -103,7 +103,7 @@ convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strB
    where toTag = toDirTag tag 
 
 -- a sub entry contains a new IFD File directory
-convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
+convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
 convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub  dirTag subDir
     where 
       subDir = convertDir dirTag bsExif getWords fileDir 
@@ -111,7 +111,7 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
       offset = fromIntegral (runGet getWord32 strBsValue)
 
 -- a standard entry represents a single tag and its value
-convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDEntry
+convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
 convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
        0  -> IFDNum exifTag len                                                  -- debug entry

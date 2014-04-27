@@ -1,18 +1,13 @@
--- -----------------------------------------------------------------------------
--- PrettyPrintRat.hs
--- -----------------------------------------------------------------------------
---
--- This module pretty prints all the exif values with rational values
---
--- -----------------------------------------------------------------------------
+
+-- | This module pretty prints all the exif values with rational values
+
+
 module Graphics.Hexif.PrettyPrintRat where
 
 import Graphics.Hexif.DataExif
 import Text.Printf (printf)
 
--- ----------------------------------------------------------------------------
--- Pretty Printers for RationalValues
--- ----------------------------------------------------------------------------
+-- | pretty printer for exif tags with multiple rational values
 ppRationalValues :: ExifTag -> [(Int,Int)] -> String
 ppRationalValues tag []       = "No values"
 ppRationalValues tag (r : []) = ppRationalValue tag r
@@ -23,7 +18,7 @@ ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
 ppRationalValues tag rs     = concat $ map fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
-
+-- | pretty printer for exif tags with a single rationalvalue
 ppRationalValue :: ExifTag -> (Int,Int) -> String
 ppRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
 ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
@@ -35,12 +30,12 @@ ppRationalValue TagDigitalZoomRatio r = printf "%.2f" (rat2Float r)
 ppRationalValue TagBrightnessValue r = ppBrightnessValue r
 ppRationalValue _  rat = fmtRat rat
 
---convert a rational to a float
+-- | Helper function: Convert a rational to a float
 rat2Float :: (Int,Int) -> Float
 rat2Float (n,d) = (fromIntegral n::Float) / (fromIntegral d:: Float)
 
 
--- format a rational number with a slash
+-- | Helper fuunction: Format a rational number with a slash
 fmtRatWithSlash :: (Int, Int) -> String
 fmtRatWithSlash (num,denum) =
     show (div num ggt) ++ "/" ++ show (div denum ggt)

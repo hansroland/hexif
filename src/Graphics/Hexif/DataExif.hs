@@ -1,19 +1,15 @@
--- -----------------------------------------------------------------------------
--- DataExif.hs
--- -----------------------------------------------------------------------------
---
--- Datastructures for the hexif library
--- 
--- -----------------------------------------------------------------------------
+
+-- | Datastructures for the hexif library
 
 module Graphics.Hexif.DataExif where
 
 import Data.Binary
 import qualified Data.ByteString.Lazy as BL
 
-data Exif = Exif [IFDDir] GetWords
+-- | Datastructure with the interpreted Exif data
+data Exif = Exif [IFDDataDir] GetWords
 
--- Definiton of the resulting output
+-- | Definiton of the resulting output
 data ExifField = ExifField
     { exifTag :: ExifTag
     , value :: String 
@@ -22,17 +18,17 @@ data ExifField = ExifField
 instance Show ExifField where
     show f = drop 3 (show $ exifTag f) ++ " -> " ++ (value f)
 
+-- | A data directory is a list of data entries
+type IFDDataDir = [IFDData]
 
-type IFDDir = [IFDEntry]
-
--- Definition of a logical IFD Entry
-data IFDEntry = IFDRat ExifTag [(Int, Int)]
+-- | Definition of a logical IFD Entry together with the data
+data IFDData = IFDRat ExifTag [(Int, Int)]
               | IFDNum ExifTag Int
               | IFDStr ExifTag String
               | IFDUdf ExifTag Int String
-              | IFDSub DirTag IFDDir
+              | IFDSub DirTag IFDDataDir
 
--- Definition of a DirTag
+-- | Definition of a DirTag
 data DirTag = IFDMain
          | IFDExif
          | IFDGPS
@@ -41,10 +37,11 @@ data DirTag = IFDMain
 
 type GetWords = (Get Word16, Get Word32)
 
+
 type IFDFileDir = [IFDFileEntry]
      
 
--- Definiton of physical IFD Entry in the file
+-- | Representation of a physical IFD Entry in the file
 data IFDFileEntry = IFDFileEntry
     { tag :: Word16                     -- 2 Bytes
     , format :: Word16       	        -- 2 Bytes
@@ -52,7 +49,7 @@ data IFDFileEntry = IFDFileEntry
     , strValue :: BL.ByteString         -- 4 Bytes
     } deriving (Eq, Show)
 
--- Definition of all the supported Exif tags
+-- | Definition of all the supported Exif tags
 data ExifTag = TagInteroperabilityIndex
              | TagInteroperabilityVersion
              | TagImageWidth
