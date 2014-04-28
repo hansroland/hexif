@@ -1,4 +1,5 @@
--- | Module to read a jpeg file and split it into segments
+-- | Module to read a jpeg file and split it into segments.
+-- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
 module Graphics.Hexif.Jpeg 
   ( Jpeg
   , readJpegFromFile

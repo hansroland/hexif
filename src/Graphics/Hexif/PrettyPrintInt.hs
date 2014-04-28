@@ -1,4 +1,5 @@
--- | This module pretty prints all the exif values with an integer code
+-- | This module pretty prints all the exif values with an integer code.
+-- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
 module Graphics.Hexif.PrettyPrintInt where
 
 import Graphics.Hexif.DataExif
