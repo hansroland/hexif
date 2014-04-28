@@ -1,5 +1,5 @@
 -- | This module contains the code to read (or parse) the exif file.
--- 
+-- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
 
 module Graphics.Hexif.Reader where
 
@@ -14,6 +14,7 @@ import Data.Binary
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
 
+-- | Offset into the lazy ByteString
 type Offset = Int
 
 -- | Read whole Exif file into our Haskell exif value.
@@ -54,12 +55,12 @@ readIFDFileDirs dirTag offset getWords bsExif =
     blocks = readIFDFileDirs dirTag next getWords bsExif
     debug = IFDFileEntry (dirTagToWord16 dirTag) 0 offset (BL.pack [])                            -- debug entry
     
--- read a single IFD File Directory from a given offset
+-- | Read a single IFD File Directory from a given offset
 readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
 readIFDFileDir offset getWords = runGet (getIFDFileDir offset getWords) 
 
 
--- get IFD directory and the offset pointing to the next chained IFD 
+-- | Get IFD directory and the offset pointing to the next chained IFD.
 getIFDFileDir :: Int -> GetWords -> Get (Offset, IFDFileDir)
 getIFDFileDir nOffset getWords@(getWord16, getWord32) = do
            skip nOffset
@@ -68,7 +69,7 @@ getIFDFileDir nOffset getWords@(getWord16, getWord32) = do
            next <- getWord32
            return (fromIntegral next, block)
 
--- Get all the entries of an IFD File Dir
+-- | Get all the entries of an IFD File Dir
 getIFDFileDirEntries :: Int -> GetWords -> Get IFDFileDir
 getIFDFileDirEntries count getWords =
     if count == 0 
@@ -78,7 +79,7 @@ getIFDFileDirEntries count getWords =
            entries <- getIFDFileDirEntries (count - 1) getWords
            return $ entry : entries
 
--- Get a single IFD file entry
+-- | Get a single IFD file entry.
 getIFDFileEntry ::  GetWords -> Get IFDFileEntry
 getIFDFileEntry (getWord16, getWord32)  = do
     tagNr <- getWord16
@@ -87,13 +88,13 @@ getIFDFileEntry (getWord16, getWord32)  = do
     strBsValue <- getLazyByteString 4
     return $ IFDFileEntry tagNr format (fromIntegral comps) strBsValue
 
--- convert IFDFileDir to IFDDataDir
+-- | Convert IFDFileDir to IFDDataDir.
 convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDataDir
 convertDir dirTag bsExif getWords fileEntries = map conf fileEntries
   where 
     conf = convertEntry dirTag bsExif getWords
  
--- convert a single IFDFile entry to an IFDData
+-- | Convert a single IFDFile entry to an IFDData.
 convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
 convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strBsValue) = 
    case toTag of
@@ -101,7 +102,8 @@ convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strB
        Nothing     -> convertStdEntry dirTag bsExif getWords fileEntry
    where toTag = toDirTag tag 
 
--- a sub entry contains a new IFD File directory
+-- | convert a sub entry. 
+-- | A sub entry contains a new IFD File directory.
 convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
 convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub  dirTag subDir
     where 
@@ -109,7 +111,8 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
       fileDir = concat $ readIFDFileDirs dirTag offset getWords bsExif
       offset = fromIntegral (runGet getWord32 strBsValue)
 
--- a standard entry represents a single tag and its value
+-- | Convert a standard entry.
+-- A standard entry represents a single tag and its value.
 convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
 convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
    case format of
@@ -138,7 +141,7 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
 
 -- subfunctions of convert
 
--- read out a string value 
+-- | Read out a string value. 
 -- Note: Some tags have non standard representation -> Special cases
 stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
 stringValue IFDGPS TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
@@ -157,9 +160,11 @@ stringValue dirTag _ len strBsValue getWord32 bsExif = clean $ runGet (getString
             lazy <- getLazyByteString $ fromIntegral (len - 1) 
             return $ unpackLazyBS lazy
 
+-- | Fetch a direct byte
 directByte :: BL.ByteString -> String
 directByte strBsValue = take 1 (unpackLazyBS strBsValue)
 
+-- | Read the rational values of on exif tag
 rationalValues :: Int -> Int -> BL.ByteString -> GetWords -> [(Int, Int)]
 rationalValues comps offset bsExif words = runGet (getRationalValues words comps offset) bsExif
     where
@@ -173,7 +178,7 @@ rationalValues comps offset bsExif words = runGet (getRationalValues words comps
             denum <- getWord32
             return (fromIntegral num, fromIntegral denum)
 
--- Convert a Word16 number to an Maybe DirTag
+-- | Convert a Word16 number to an Maybe DirTag
 toDirTag :: Word16 -> Maybe DirTag
 toDirTag t 
     | t == 0x8769 = Just IFDExif
@@ -181,6 +186,7 @@ toDirTag t
     | t == 0x8825 = Just IFDGPS
 	| otherwise   = Nothing
 
+-- | Convert a directory tag to a number
 dirTagToWord16 :: DirTag -> Word16
 dirTagToWord16 IFDMain = 0xFF01 
 dirTagToWord16 IFDExif = 0xFF02

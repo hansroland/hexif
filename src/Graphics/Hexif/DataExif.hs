@@ -1,5 +1,6 @@
 
--- | Datastructures for the hexif library
+-- | Module with the datastructures for the hexif library.
+-- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
 
 module Graphics.Hexif.DataExif where
 

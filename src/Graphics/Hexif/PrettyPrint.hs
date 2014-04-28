@@ -1,4 +1,5 @@
--- | Print out nicely the contents the data of IFDEntries
+-- | Print out nicely the contents the data of IFDEntries.
+-- This module is an internal module of Graphics.Hexif and should be used in the hexif project!
 
 {-# LANGUAGE ViewPatterns, ScopedTypeVariables #-}
 module Graphics.Hexif.PrettyPrint (prettyPrint) where
