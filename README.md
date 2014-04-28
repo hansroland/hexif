@@ -1,4 +1,4 @@
-# Read the EXIF File of a JPEG image with Haskell Code only.
+## Read the EXIF File of a JPEG image with Haskell Code only.
 
 This hexif library has similar functionality as the *exif* package [http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html](http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html). The exif package contains the bindings (wrapper) to the libexif C EXIF library [http://libexif.sourceforge.net/](http://libexif.sourceforge.net/).
 
