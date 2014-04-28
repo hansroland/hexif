@@ -21,5 +21,12 @@ main = do
 
 processFile :: FilePath -> IO()
 processFile fn = do
-   exif <- fromFile fn
-   mapM_ print (allTagsInclDebug exif)
+    exif <- fromFile fn
+    mapM_ print (allTagsInclDebug exif)
+
+singleTag :: FilePath -> ExifTag -> IO()
+singleTag fn tag = do
+    exif <- fromFile fn
+    print $ getTag exif tag
+
+

@@ -1,9 +1,28 @@
 {-|
-     Read (and maybe later rewrite) the exif file of a JPEG image with native Haskell code
+     Read and interpret the exif file of a JPEG image only with Haskell code.
 
-     This module has similar functionality as the "exif" package (<http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html>)
+     This hexif library has similar functionality as the "exif" package (<http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html>). The exif package contains the bindings (wrapper) to the libexif C EXIF library (<http://libexif.sourceforge.net/>).
 
-     For more information about JPG and Exif, see
+The first example shows how to print out all supported exif information of a JPEG image.
+
+> processFile :: FilePath -> IO()
+> processFile fn = do
+>     exif <- fromFile fn
+>     mapM_ print (allTags exif)
+>
+> -- processFile "RS4748.JPG"
+
+The next example prints out the value of a single tag:
+
+> singleTag :: FilePath -> ExifTag -> IO()
+> singleTag fn tag = do
+>     exif <- fromFile fn
+>     print $ getTag exif tag
+> 
+> -- singleTag "RS4847.JPG" TagComponentsConfiguration
+
+
+For more information about JPG and Exif, see
 
      *  <http://www.kodak.com/global/plugins/acrobat/en/service/digCam/exifStandard2.pdf>
 
@@ -16,6 +35,7 @@ module Graphics.Hexif
   (ExifField(..)
   , ExifTag(..)
   , allTags
+  , getTag
   , allTagsInclDebug
   , fromFile
   , fromExifFile
@@ -40,6 +60,14 @@ allTags exif = filter removeDebugs (allTagsInclDebug exif)
       , TagSubDir_IFDGPS
       , TagSubDir_IFDInterop
       ]
+
+-- | Return the value of a single Exif tag.
+getTag :: Exif -> ExifTag -> Maybe String
+getTag exif tag = 
+     if length tags == 0 
+         then Nothing
+         else Just $ value $ head tags
+     where tags = filter (\ef -> exifTag ef == tag) (allTags exif)
 
 -- | Return a list of all ExifFields including the debug tags.
 --   Do NOT use this function. It will be deleted later.
