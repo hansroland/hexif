@@ -1,6 +1,6 @@
-## Read the EXIF File of a JPEG image with Haskell Code only.
+### Read the EXIF File of a JPEG image with Haskell Code only.
 
-This hexif library has similar functionality as the *exif* package [http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html](http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html). The exif package contains the bindings (wrapper) to the libexif C EXIF library [http://libexif.sourceforge.net/](http://libexif.sourceforge.net/).
+This *hexif* library has similar functionality as the [Hackage *exif* package](http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html). *Hexif* uses only pure Haskell code and no operating system library. 
 
 The first example shows how to print out all supported exif information of a JPEG image.
 
@@ -18,4 +18,4 @@ The next example prints out the value of a single tag:
         print $ getTag exif tag 
     -- singleTag "RS4847.JPG" TagComponentsConfiguration
 
-
+Note: The current code does not yet support all EXIF tags.
