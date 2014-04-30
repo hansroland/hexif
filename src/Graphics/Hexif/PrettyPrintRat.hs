@@ -14,7 +14,7 @@ ppRationalValues TagGPSLatitude rs      = ppGPSLongLatt rs
 ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
-ppRationalValues tag rs     = concat $ map fmtRat' rs
+ppRationalValues tag rs     = concatMap fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
 -- | pretty printer for exif tags with a single rationalvalue.

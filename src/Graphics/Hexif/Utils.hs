@@ -17,9 +17,3 @@ import Data.List (intersperse)
 unpackLazyBS :: BL.ByteString -> String
 unpackLazyBS = map (chr . fromIntegral)  . BL.unpack
 
--- | Given a delimiter and a list of items (or strings), join the items
--- by using the delimiter.
--- From Data.List.Utils.
--- I dont' want to depend on all the dependecies of Data.List.Utils.
-join :: [a] -> [[a]] -> [a]
-join delim l = concat (intersperse delim l)

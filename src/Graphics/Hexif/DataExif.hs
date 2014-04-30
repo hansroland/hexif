@@ -17,7 +17,7 @@ data ExifField = ExifField
     } deriving (Eq)
 
 instance Show ExifField where
-    show f = drop 3 (show $ exifTag f) ++ " -> " ++ (value f)
+    show f = drop 3 (show $ exifTag f) ++ " -> " ++ value f
 
 -- | A data directory is a list of data entries
 type IFDDataDir = [IFDData]
@@ -140,10 +140,10 @@ data ExifTag = TagInteroperabilityIndex
              | TagGPSDestLongitude
              | TagGPSDateStamp
              -- Subdirectory tags
-			 | TagSubDir_IFDMain
-             | TagSubDir_IFDExif
-             | TagSubDir_IFDGPS
-             | TagSubDir_IFDInterop
+			 | TagSubDirIFDMain
+             | TagSubDirIFDExif
+             | TagSubDirIFDGPS
+             | TagSubDirIFDInterop
              
      deriving (Eq, Show)
 

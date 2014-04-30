@@ -48,7 +48,7 @@ readIFDFileDirs :: DirTag -> Offset -> GetWords -> BL.ByteString -> [IFDFileDir]
 readIFDFileDirs dirTag offset getWords bsExif = 
   if offset == 0
      then []
-     else (debug :[]) : block : blocks
+     else [debug] : block : blocks
      -- else block : blocks       -- without debugging
   where
     (next, block) = readIFDFileDir offset getWords bsExif
@@ -90,7 +90,7 @@ getIFDFileEntry (getWord16, getWord32)  = do
 
 -- | Convert IFDFileDir to IFDDataDir.
 convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDataDir
-convertDir dirTag bsExif getWords fileEntries = map conf fileEntries
+convertDir dirTag bsExif getWords = map conf
   where 
     conf = convertEntry dirTag bsExif getWords
  
@@ -269,9 +269,9 @@ toStdTag t = case t of
    0xc6d2 -> TagPanasonicTitle1
    0xc6d3 -> TagPanasonicTitle2
    0xea1c -> TagPadding
-   0xff01 -> TagSubDir_IFDMain
-   0xff02 -> TagSubDir_IFDExif
-   0xff03 -> TagSubDir_IFDInterop
+   0xff01 -> TagSubDirIFDMain
+   0xff02 -> TagSubDirIFDExif
+   0xff03 -> TagSubDirIFDInterop
    _ -> TagTagUnknown t
 
 -- | Convert a Word16 number to an GPS tag
@@ -293,7 +293,7 @@ toGPSTag t = case t of
    0x0015 -> TagGPSDestLongitudeRef
    0x0016 -> TagGPSDestLongitude
    0x001d -> TagGPSDateStamp
-   0xff04 -> TagSubDir_IFDGPS
+   0xff04 -> TagSubDirIFDGPS
    _ -> TagTagUnknown t
 
 

@@ -5,10 +5,10 @@
 module Graphics.Hexif.PrettyPrint (prettyPrint) where
 
 import Graphics.Hexif.DataExif
-import Graphics.Hexif.Utils
 import Graphics.Hexif.PrettyPrintInt
 import Graphics.Hexif.PrettyPrintRat
 import Text.Printf (printf)
+import Data.List(intercalate)
 
 import Data.Char (chr, ord)
 
@@ -20,7 +20,7 @@ prettyPrint entries = map ppIFDData (flatten entries)
 -- Note: subDirs will always be printed at the end
 flatten :: IFDDataDir -> [IFDData]
 flatten [] = []
-flatten ((IFDSub tag ifdDir) : ds) = flatten ds ++ flatten ifdDir
+flatten (IFDSub tag ifdDir : ds) = flatten ds ++ flatten ifdDir
 flatten (d : ds) = d : flatten ds
 
 -- | Pretty print a single exif field
@@ -37,7 +37,7 @@ ppUndefinedValue TagExifVersion len value = ppExifVersion value
 ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
 ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
 ppUndefinedValue TagFileSource len value = ppFileSource value
-ppUndefinedValue TagSceneType len value = ppScreenType value
+ppUndefinedValue TagSceneType len value = ppSceneType value
 ppUndefinedValue TagInteroperabilityVersion len value = value
 ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 
@@ -51,8 +51,9 @@ ppFlashPixVersion :: String -> String
 ppFlashPixVersion value = printf "FlashPix Version %.1f" num
   where num :: Float = read value / 100.0
 
+-- | Pretty printer for the Components Configuration
 ppComponentsConfiguration :: String -> String
-ppComponentsConfiguration conf = join " " $ map ppComps conf
+ppComponentsConfiguration conf = intercalate " " $ map ppComps conf
    where
        ppComps (ord -> 0)  = "-"
        ppComps (ord -> 1) = "Y"
@@ -62,17 +63,17 @@ ppComponentsConfiguration conf = join " " $ map ppComps conf
        ppComps (ord -> 5) = "G"
        ppComps (ord -> 6) = "B"
 
-
+-- | Pretty printer for the file source
 ppFileSource :: String -> String
 ppFileSource value = 
       if head value == chr 3 
       then "DSC" 
       else "(unknown)"
 
-ppScreenType :: String -> String
-ppScreenType value = 
+-- |Pretty printer for the Scene type
+ppSceneType :: String -> String
+ppSceneType value = 
       if head value == chr 1 
       then "Directly photographed" 
       else "(unknown)"
    
-

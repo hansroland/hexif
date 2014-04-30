@@ -57,10 +57,10 @@ readJpegFromFile fn = do
 extractExif :: Jpeg -> BL.ByteString
 extractExif jpeg = segData $ head (filter (\seg -> segMarker seg == 0xFFE1) (segments jpeg))
 
--- | Read a Jpeg value form a lazy ByteString  
+-- | Read a Jpeg value form a lazy ByteString
 readJpeg :: BL.ByteString -> Jpeg
-readJpeg bytes = runGet getJpeg bytes
-  where   
+readJpeg = runGet getJpeg
+  where
     getJpeg :: Get Jpeg
     getJpeg = do
         jpegStart <- getWord16be
