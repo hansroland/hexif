@@ -77,8 +77,22 @@ ppBrightnessValue r = printf "%.2f EV (%.2f cd/m^2)" f pf
 
 -- | Pretty print the values for the latitude and longitude GPS fields.
 ppGPSLongLatt :: [(Int,Int)] -> String
-ppGPSLongLatt rs = fmtLL $ map rat2Float rs
+ppGPSLongLatt rs = fmtLL fs
   where 
-    fmtLL rs@(d:m:s:[]) = printf "%.0f, %.0f, %.4f" d m s
-    fmt  _ = "verify data format"
+    fmtLL fs@(r1:r2:r3:[]) = printf "%d, %d, %.2f" d m s
+    fmtLL  _ = "verify data format"
+    fs = map rat2Float rs
+    (d,m,s)  = degNorm fs
 
+-- | Normalize degrees
+degNorm :: [Float] -> (Int, Int, Float)
+degNorm (d:m:s:[]) = (i1, i2, f3)
+  where 
+    (i1, f2) = carry d m
+    (i2, f3) = carry m s  
+
+carry :: Float -> Float -> (Int, Float)
+carry f1 f2 = (i1, r2)
+  where
+     i1 = floor f1
+     r2 = (f1 - fromIntegral i1) * 60 + f2
