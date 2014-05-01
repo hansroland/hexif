@@ -54,17 +54,17 @@ import System.FilePath
 allTags :: Exif -> [ExifField]
 allTags exif = filter removeDebugs (allTagsInclDebug exif)
   where
-    removeDebugs f = not $ elem (exifTag f) 
-      [ TagSubDir_IFDMain
-      , TagSubDir_IFDExif
-      , TagSubDir_IFDGPS
-      , TagSubDir_IFDInterop
+    removeDebugs f = exifTag f `notElem` 
+      [ TagSubDirIFDMain
+      , TagSubDirIFDExif
+      , TagSubDirIFDGPS
+      , TagSubDirIFDInterop
       ]
 
 -- | Return the value of a single Exif tag.
 getTag :: Exif -> ExifTag -> Maybe String
 getTag exif tag = 
-     if length tags == 0 
+     if null tags 
          then Nothing
          else Just $ value $ head tags
      where tags = filter (\ef -> exifTag ef == tag) (allTags exif)
