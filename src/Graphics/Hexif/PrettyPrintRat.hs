@@ -14,6 +14,7 @@ ppRationalValues TagGPSLatitude rs      = ppGPSLongLatt rs
 ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
+ppRationalValues TagGPSTimeStamp rs     = ppGPSTimeStamp $ map rat2Float rs
 ppRationalValues tag rs     = concatMap fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
@@ -84,15 +85,21 @@ ppGPSLongLatt rs = fmtLL fs
     fs = map rat2Float rs
     (d,m,s)  = degNorm fs
 
--- | Normalize degrees
+-- | Support function for ppGPSLongLat: Normalize degrees
 degNorm :: [Float] -> (Int, Int, Float)
 degNorm (d:m:s:[]) = (i1, i2, f3)
-  where 
+  where
     (i1, f2) = carry d m
-    (i2, f3) = carry m s  
-
+    (i2, f3) = carry m s
+ 
+-- | Support function for ppGPSLongLatt: Carry fractional parts to right
 carry :: Float -> Float -> (Int, Float)
 carry f1 f2 = (i1, r2)
   where
      i1 = floor f1
      r2 = (f1 - fromIntegral i1) * 60 + f2
+
+-- | Pretty print GPS time stamp
+ppGPSTimeStamp :: [Float] -> String
+ppGPSTimeStamp [h, m, s] = printf "%02.0f:%02.0f:%02.2f" h m s
+ppGPSTimeStamp _         = "Invalid date format"
