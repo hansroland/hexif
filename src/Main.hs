@@ -15,7 +15,7 @@ import System.FilePath
 main :: IO()
 main = do
      args <- getArgs
-     if length args == 0
+     if null args
        then putStrLn "usage: ???? filename"
        else processFile $ head args
 
