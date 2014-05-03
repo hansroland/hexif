@@ -85,15 +85,3 @@ getSegment = do
      len <- getWord16be 
      segData <- getLazyByteString (fromIntegral len - 2)
      return $ JpegSegment (fromIntegral marker) (fromIntegral len) segData (fromIntegral offset - 2)
-
-
-
-
-
-
-
-
-
-
-
-

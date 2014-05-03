@@ -23,11 +23,11 @@ instance Show ExifField where
 type IFDDataDir = [IFDData]
 
 -- | Definition of a logical IFD Entry together with the data
-data IFDData = IFDRat ExifTag [(Int, Int)]
-              | IFDNum ExifTag Int
-              | IFDStr ExifTag String
-              | IFDUdf ExifTag Int String
-              | IFDSub DirTag IFDDataDir
+data IFDData = IFDRat  ExifTag Format [(Int, Int)]
+              | IFDNum ExifTag Format Int
+              | IFDStr ExifTag Format String
+              | IFDUdf ExifTag Format Int String
+              | IFDSub DirTag  Format IFDDataDir
 
 -- | Definition of a DirTag
 data DirTag = IFDMain
@@ -51,6 +51,21 @@ data IFDFileEntry = IFDFileEntry
     , components :: Int   		        -- 4 Bytes
     , strValue :: BL.ByteString         -- 4 Bytes
     } deriving (Eq, Show)
+
+-- | Definitons of the Formats
+data Format = Fmt00                      -- debug
+            | Fmt01
+            | Fmt02
+            | Fmt03
+            | Fmt04
+            | Fmt05
+            | Fmt06
+            | Fmt07
+            | Fmt08
+            | Fmt09
+            | Fmt10
+      deriving (Eq, Show)
+
 
 -- | Definition of all the supported Exif tags
 data ExifTag = TagInteroperabilityIndex

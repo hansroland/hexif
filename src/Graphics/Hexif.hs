@@ -36,6 +36,7 @@ module Graphics.Hexif
   , ExifTag(..)
   , allTags
   , getTag
+  , allEntries
   , allTagsInclDebug
   , fromFile
   , fromExifFile
@@ -72,7 +73,11 @@ getTag exif tag =
 -- | Return a list of all ExifFields including the debug tags.
 --   Do NOT use this function. It will be deleted later.
 allTagsInclDebug :: Exif -> [ExifField]
-allTagsInclDebug exif = prettyPrint $ concat $ dirs exif
+allTagsInclDebug = prettyPrint . allEntries
+
+-- | Return a list of our data entries
+allEntries :: Exif -> IFDDataDir
+allEntries exif = concat $ dirs exif
 
 -- | Return the exit data from a jpeg file.
 --   Use this function to initialize your exif value
@@ -81,6 +86,8 @@ fromFile fn = do
     jpeg <- readJpegFromFile fn
     let bsExif = extractExif jpeg
     return $ readExif bsExif
+
+
 
 
 -- | Little getter function to extract the directories from an Exif value

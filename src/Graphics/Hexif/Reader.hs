@@ -105,7 +105,7 @@ convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strB
 -- | convert a sub entry. 
 -- | A sub entry contains a new IFD File directory.
 convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub  dirTag subDir
+convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub dirTag Fmt00 subDir
     where 
       subDir = convertDir dirTag bsExif getWords fileDir 
       fileDir = concat $ readIFDFileDirs dirTag offset getWords bsExif
@@ -114,17 +114,18 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
 -- | Convert a standard entry.
 -- A standard entry represents a single tag and its value.
 convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) = 
+convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) =
    case format of
-       0  -> IFDNum exifTag len                                                  -- debug entry
-       1  -> IFDNum exifTag byteValue 
-       2  -> IFDStr exifTag (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
-       3  -> IFDNum exifTag offsetOrValue16 
-       4  -> IFDNum exifTag offsetOrValue32
-       5  -> IFDRat exifTag (rationalValues len offsetOrValue32 bsExif words)
-       7  -> IFDUdf exifTag len (unpackLazyBS strBsValue)
-       10 -> IFDRat exifTag (rationalValues len offsetOrValue32 bsExif words)
-       _      -> error $ "Format " ++ show format ++ " not yet implemented"  
+       0  -> IFDNum exifTag Fmt00 len                                                  -- debug entry
+       1  -> IFDNum exifTag Fmt01 byteValue
+       2  -> IFDStr exifTag Fmt02 (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
+       3  -> IFDNum exifTag Fmt03 offsetOrValue16
+       4  -> IFDNum exifTag Fmt04 offsetOrValue32
+       5  -> IFDRat exifTag Fmt05 (rationalValues len offsetOrValue32 bsExif words)
+       7  -> IFDUdf exifTag Fmt07 len (unpackLazyBS strBsValue)
+       9  -> IFDNum exifTag Fmt09 offsetOrValue32
+       10 -> IFDRat exifTag Fmt10 (rationalValues len offsetOrValue32 bsExif words)
+       _      -> error $ "Format " ++ show format ++ " not yet implemented"
    where 
       exifTag = toExifTag dirTag tag
       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
@@ -137,6 +138,7 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
       -- 0x0004 = unsigned long
       -- 0x0005 = unsigned rational
       -- 0x0007 = undefined
+      -- 0x0009 = signed long
       -- 0x000A = signed rationale
 
 -- subfunctions of convert

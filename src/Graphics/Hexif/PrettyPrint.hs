@@ -20,16 +20,16 @@ prettyPrint entries = map ppIFDData (flatten entries)
 -- Note: subDirs will always be printed at the end
 flatten :: IFDDataDir -> [IFDData]
 flatten [] = []
-flatten (IFDSub tag ifdDir : ds) = flatten ds ++ flatten ifdDir
+flatten (IFDSub tag _ ifdDir : ds) = flatten ds ++ flatten ifdDir
 flatten (d : ds) = d : flatten ds
 
 -- | Pretty print a single exif field
-ppIFDData :: IFDData -> ExifField 
-ppIFDData (IFDRat tag rats) = ExifField tag (ppRationalValues tag rats)
-ppIFDData (IFDNum tag nVal) = ExifField tag (ppNumValue tag nVal)
-ppIFDData (IFDStr tag strVal) = ExifField tag strVal
-ppIFDData (IFDUdf tag len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
-ppIFDData (IFDSub tag ifdDir) = error $ "Directory encountered " ++ show tag
+ppIFDData :: IFDData -> ExifField
+ppIFDData (IFDRat tag _ rats) = ExifField tag (ppRationalValues tag rats)
+ppIFDData (IFDNum tag _ nVal) = ExifField tag (ppNumValue tag nVal)
+ppIFDData (IFDStr tag _ strVal) = ExifField tag strVal
+ppIFDData (IFDUdf tag _ len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
+ppIFDData (IFDSub tag _ ifdDir) = error $ "Directory encountered " ++ show tag
 
 -- | Pretty printers for Undefined Values
 ppUndefinedValue :: ExifTag -> Int -> String -> String
@@ -53,7 +53,7 @@ ppFlashPixVersion value = printf "FlashPix Version %.1f" num
 
 -- | Pretty printer for the Components Configuration
 ppComponentsConfiguration :: String -> String
-ppComponentsConfiguration conf = intercalate " " $ map ppComps conf
+ppComponentsConfiguration conf = unwords $ map ppComps conf
    where
        ppComps (ord -> 0)  = "-"
        ppComps (ord -> 1) = "Y"
