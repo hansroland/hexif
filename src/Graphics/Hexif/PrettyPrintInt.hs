@@ -27,6 +27,7 @@ ppNumValue tag n = case tag of
     TagSharpness         -> ppTagContrastSharpness n
     TagSensingMethod     -> ppTagSensingMethod n
     TagSubjectDistanceRange -> ppTagSubjectDistanceRange n
+    TagFocalPlaneResolutionUnit -> ppFocalPlaneResolutionUnit n
     TagGPSAltitudeRef    -> ppTagGPSAltitudeRef n
     _                    -> show n
 
@@ -235,6 +236,13 @@ ppTagSubjectDistanceRange n = case n of
     2 -> "Close view"
     3 -> "Distant view"
     _ -> undef n
+
+-- | Pretty printer for the tag FocalPlanResolutionUnit
+ppFocalPlaneResolutionUnit :: Int -> String
+ppFocalPlaneResolutionUnit n = case n of
+    1 -> "No absolute unit of measurement"
+    2 -> "Inch"
+    3 -> "Centimeter"
 
 -- | Pretty printer for the tag GPSAltitudeRef
 ppTagGPSAltitudeRef :: Int -> String

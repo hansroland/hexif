@@ -25,8 +25,10 @@ ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
 ppRationalValue TagCompressedBitsPerPixel r = ' ' : fmtRat r
 ppRationalValue TagExposureBiasValue r = ppExposureBiasValue r
 ppRationalValue TagFocalLength r = ppFocalLength r
-ppRationalValue TagMaxApertureValue r = ppMaxApertureValue r
-ppRationalValue TagDigitalZoomRatio r = printf "%.2f" (rat2Float r)
+ppRationalValue TagApertureValue r = ppApertureValue r
+ppRationalValue TagMaxApertureValue r = ppApertureValue r
+ppRationalValue TagShutterSpeedValue r = ppShutterSpeedValue r
+ppRationalValue TagDigitalZoomRatio r = printf "%.4f" (rat2Float r)
 ppRationalValue TagBrightnessValue r = ppBrightnessValue r
 ppRationalValue _  rat = fmtRat rat
 
@@ -62,12 +64,20 @@ ppExposureBiasValue r = printf "%.2f EV" (rat2Float r)
 ppFocalLength :: (Int, Int) -> String
 ppFocalLength r = printf "%.1f mm" (rat2Float r)
 
--- | Pretty print the value of the tag MaxApertureValue.
-ppMaxApertureValue :: (Int, Int) -> String
-ppMaxApertureValue r = printf "%.2f EV (f/%.1f)" f pf
+-- | Pretty print the value of the tags ApertureValue and MaxApertureValue.
+ppApertureValue :: (Int, Int) -> String
+ppApertureValue r = printf "%.2f EV (f/%.1f)" f pf
   where 
     f = rat2Float r
     pf = 2 ** (f / 2)
+
+-- | Pretty print the value of the tag ShutterSpeedValue.
+ppShutterSpeedValue :: (Int, Int) -> String
+ppShutterSpeedValue r = printf "%.02f EV (1/%d sec.)" f (d::Int)
+  where 
+    f = rat2Float r
+    d = floor $ fromRational 2 ** f;
+
 
 -- | Pretty print the value of the tag BightnessValue.
 ppBrightnessValue :: (Int, Int) -> String
