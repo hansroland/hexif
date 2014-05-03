@@ -27,7 +27,7 @@ flatten (d : ds) = d : flatten ds
 ppIFDData :: IFDData -> ExifField
 ppIFDData (IFDRat tag _ rats) = ExifField tag (ppRationalValues tag rats)
 ppIFDData (IFDNum tag _ nVal) = ExifField tag (ppNumValue tag nVal)
-ppIFDData (IFDStr tag _ strVal) = ExifField tag strVal
+ppIFDData (IFDStr tag _ strVal) = ExifField tag (ppStrValue tag strVal)
 ppIFDData (IFDUdf tag _ len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
 ppIFDData (IFDSub tag _ ifdDir) = error $ "Directory encountered " ++ show tag
 
@@ -40,6 +40,20 @@ ppUndefinedValue TagFileSource len value = ppFileSource value
 ppUndefinedValue TagSceneType len value = ppSceneType value
 ppUndefinedValue TagInteroperabilityVersion len value = value
 ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
+
+-- | PrettyPrinters for String values
+ppStrValue :: ExifTag -> String -> String
+ppStrValue TagXPAuthor strVal = removeNull strVal
+ppStrValue TagXPTitle strVal = removeNull  strVal
+ppStrValue _ strVal = rtrimX00 strVal
+
+-- | Remove trailing hex zeros 0x00 from strings
+rtrimX00 :: String -> String
+rtrimX00 = reverse . dropWhile (\c -> ord c == 0) . reverse
+
+-- | Little support function for ppStrValue
+removeNull = filter (\c -> ord c /= 00)
+     
 
 -- | Pretty printer for the Exif version
 ppExifVersion :: String -> String

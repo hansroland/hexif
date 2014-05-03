@@ -117,7 +117,7 @@ convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDDat
 convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) =
    case format of
        0  -> IFDNum exifTag Fmt00 len                                                  -- debug entry
-       1  -> IFDNum exifTag Fmt01 byteValue
+       1  -> IFDStr exifTag Fmt01 (byteValues offsetOrValue32 len)
        2  -> IFDStr exifTag Fmt02 (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
        3  -> IFDNum exifTag Fmt03 offsetOrValue16
        4  -> IFDNum exifTag Fmt04 offsetOrValue32
@@ -130,7 +130,7 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
       exifTag = toExifTag dirTag tag
       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
       offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
-      byteValue = fromIntegral (runGet getWord8 strBsValue)
+      byteValues offset len =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM len getWord8)  bsExif
       -- formats
       -- 0x0001 = unsigned byte
       -- 0x0002 = ascii string
@@ -146,16 +146,18 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
 -- | Read out a string value. 
 -- Note: Some tags have non standard representation -> Special cases
 stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
+stringValue IFDExif TagSubSecTime len strBsValue          _  _       = take len (unpackLazyBS strBsValue)
+stringValue IFDExif TagSubSecTimeOriginal len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
+stringValue IFDExif TagSubSecTimeDigitized len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
 stringValue IFDGPS TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSLongitudeRef _ strBsValue        _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
-stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue        _  _       = directByte strBsValue
+stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue     _  _       = directByte strBsValue
 stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
-stringValue dirTag _ len strBsValue getWord32 bsExif = clean $ runGet (getStringValue len offset) bsExif
+stringValue dirTag _ len strBsValue getWord32 bsExif = runGet (getStringValue len offset) bsExif
     where
         offset = fromIntegral (runGet getWord32 strBsValue)
-        clean = reverse . dropWhile (\c -> ord c == 0) . reverse
         getStringValue :: Int -> Int -> Get String
         getStringValue len offset = do
             skip offset
@@ -245,6 +247,11 @@ toStdTag t = case t of
    0x920a -> TagFocalLength
    0x927c -> TagMakerNote
    0x9286 -> TagUserComment
+   0x9290 -> TagSubSecTime
+   0x9291 -> TagSubSecTimeOriginal
+   0x9292 -> TagSubSecTimeDigitized
+   0x9c9b -> TagXPTitle
+   0x9c9d -> TagXPAuthor
    0xa000 -> TagFlashPixVersion
    0xa001 -> TagColorSpace
    0xa002 -> TagPixelXDimension
@@ -271,6 +278,7 @@ toStdTag t = case t of
    0xc6d2 -> TagPanasonicTitle1
    0xc6d3 -> TagPanasonicTitle2
    0xea1c -> TagPadding
+   0xea1d -> TagOffsetSchemata
    0xff01 -> TagSubDirIFDMain
    0xff02 -> TagSubDirIFDExif
    0xff03 -> TagSubDirIFDInterop

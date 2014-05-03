@@ -60,6 +60,7 @@ allTags exif = filter removeDebugs (allTagsInclDebug exif)
       , TagSubDirIFDExif
       , TagSubDirIFDGPS
       , TagSubDirIFDInterop
+      , TagOffsetSchemata
       ]
 
 -- | Return the value of a single Exif tag.
@@ -86,9 +87,6 @@ fromFile fn = do
     jpeg <- readJpegFromFile fn
     let bsExif = extractExif jpeg
     return $ readExif bsExif
-
-
-
 
 -- | Little getter function to extract the directories from an Exif value
 dirs :: Exif -> [IFDDataDir]

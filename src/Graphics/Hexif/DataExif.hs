@@ -111,6 +111,11 @@ data ExifTag = TagInteroperabilityIndex
              | TagFocalLength
              | TagMakerNote
              | TagUserComment
+             | TagSubSecTime
+             | TagSubSecTimeOriginal
+             | TagSubSecTimeDigitized
+             | TagXPTitle
+             | TagXPAuthor
              | TagFlashPixVersion
              | TagColorSpace
              | TagPixelXDimension
@@ -137,6 +142,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagPanasonicTitle1
              | TagPanasonicTitle2
              | TagPadding
+             | TagOffsetSchemata
              -- GPS Tags
              | TagGPSVersionID
              | TagGPSLatitudeRef
