@@ -20,17 +20,19 @@ ppRationalValues tag rs     = concatMap fmtRat' rs
 
 -- | pretty printer for exif tags with a single rationalvalue.
 ppRationalValue :: ExifTag -> (Int,Int) -> String
-ppRationalValue TagExposureTime r = fmtRatWithSlash r ++ " sec."
-ppRationalValue TagFNumber r = "f/" ++ fmtRatFloat r
-ppRationalValue TagCompressedBitsPerPixel r = ' ' : fmtRat r
-ppRationalValue TagExposureBiasValue r = ppExposureBiasValue r
-ppRationalValue TagFocalLength r = ppFocalLength r
-ppRationalValue TagApertureValue r = ppApertureValue r
-ppRationalValue TagMaxApertureValue r = ppApertureValue r
-ppRationalValue TagShutterSpeedValue r = ppShutterSpeedValue r
-ppRationalValue TagDigitalZoomRatio r = printf "%.4f" (rat2Float r)
-ppRationalValue TagBrightnessValue r = ppBrightnessValue r
-ppRationalValue _  rat = fmtRat rat
+ppRationalValue tag r
+    | tag == TagExposureTime = fmtRatWithSlash r ++ " sec."
+    | tag == TagFNumber = "f/" ++ fmtRatFloat r
+    | tag == TagCompressedBitsPerPixel = ' ' : fmtRat r
+    | tag == TagExposureBiasValue = ppExposureBiasValue r
+    | tag == TagFocalLength = ppFocalLength r
+    | tag == TagApertureValue = ppApertureValue f
+    | tag == TagMaxApertureValue = ppApertureValue f
+    | tag == TagShutterSpeedValue = ppShutterSpeedValue f
+    | tag == TagDigitalZoomRatio = printf "%.4f" f
+    | tag == TagBrightnessValue = ppBrightnessValue f
+    | otherwise = fmtRat r
+    where f = rat2Float r
 
 -- | Helper function: Convert a rational to a float.
 rat2Float :: (Int,Int) -> Float
@@ -65,25 +67,22 @@ ppFocalLength :: (Int, Int) -> String
 ppFocalLength r = printf "%.1f mm" (rat2Float r)
 
 -- | Pretty print the value of the tags ApertureValue and MaxApertureValue.
-ppApertureValue :: (Int, Int) -> String
-ppApertureValue r = printf "%.2f EV (f/%.1f)" f pf
-  where 
-    f = rat2Float r
+ppApertureValue :: Float -> String
+ppApertureValue f = printf "%.2f EV (f/%.1f)" f pf
+  where
     pf = 2 ** (f / 2)
 
 -- | Pretty print the value of the tag ShutterSpeedValue.
-ppShutterSpeedValue :: (Int, Int) -> String
-ppShutterSpeedValue r = printf "%.02f EV (1/%d sec.)" f (d::Int)
-  where 
-    f = rat2Float r
+ppShutterSpeedValue :: Float -> String
+ppShutterSpeedValue f = printf "%.02f EV (1/%d sec.)" f (d::Int)
+  where
     d = floor $ fromRational 2 ** f;
 
 
 -- | Pretty print the value of the tag BightnessValue.
-ppBrightnessValue :: (Int, Int) -> String
-ppBrightnessValue r = printf "%.2f EV (%.2f cd/m^2)" f pf
+ppBrightnessValue :: Float -> String
+ppBrightnessValue f = printf "%.2f EV (%.2f cd/m^2)" f pf
   where
-    f = rat2Float r
     pf = 1 / (pi * 0.3048 * 0.3048) * 2 ** f
 
 -- | Pretty print the values for the latitude and longitude GPS fields.
