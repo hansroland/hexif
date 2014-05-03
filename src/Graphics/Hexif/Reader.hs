@@ -146,7 +146,7 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
 -- | Read out a string value. 
 -- Note: Some tags have non standard representation -> Special cases
 stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
-stringValue IFDExif TagSubSecTime len strBsValue          _  _       = take len (unpackLazyBS strBsValue)
+stringValue IFDExif TagSubsecTime len strBsValue          _  _       = take len (unpackLazyBS strBsValue)
 stringValue IFDExif TagSubSecTimeOriginal len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
 stringValue IFDExif TagSubSecTimeDigitized len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
 stringValue IFDGPS TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
@@ -247,7 +247,7 @@ toStdTag t = case t of
    0x920a -> TagFocalLength
    0x927c -> TagMakerNote
    0x9286 -> TagUserComment
-   0x9290 -> TagSubSecTime
+   0x9290 -> TagSubsecTime
    0x9291 -> TagSubSecTimeOriginal
    0x9292 -> TagSubSecTimeDigitized
    0x9c9b -> TagXPTitle

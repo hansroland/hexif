@@ -111,7 +111,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagFocalLength
              | TagMakerNote
              | TagUserComment
-             | TagSubSecTime
+             | TagSubsecTime
              | TagSubSecTimeOriginal
              | TagSubSecTimeDigitized
              | TagXPTitle
