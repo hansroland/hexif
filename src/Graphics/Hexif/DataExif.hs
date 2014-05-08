@@ -74,10 +74,12 @@ data ExifTag = TagInteroperabilityIndex
              | TagImageLength
              | TagBitsPerSample
              | TagCompression
+             | TagPhotometricInterpretation
              | TagImageDescription
              | TagModel
              | TagMake
              | TagOrientation
+             | TagSamplesPerPixel
              | TagTagUnknown Word16
              | TagXResolution
              | TagYResolution
@@ -85,8 +87,11 @@ data ExifTag = TagInteroperabilityIndex
              | TagSoftware
              | TagDateTime
              | TagArtist
+             | TagWhitePoint
+             | TagPrimaryChromaticities
              | TagJPEGInterchangeFormat
              | TagJPEGInterchangeFormatLength
+             | TagYCbCrCoefficients
              | TagYCbCrPositioning
              | TagRelatedImageWidth
              | TagRelatedImageLength
@@ -105,6 +110,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagBrightnessValue
              | TagExposureBiasValue
              | TagMaxApertureValue
+             | TagSubjectDistance
              | TagMeteringMode
              | TagLightSource
              | TagFlash
@@ -138,6 +144,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagSharpness
              | TagSubjectDistanceRange
              | TagImageUniqueID
+             | TagGamma
              | TagPrintImageMatching
              | TagPanasonicTitle1
              | TagPanasonicTitle2

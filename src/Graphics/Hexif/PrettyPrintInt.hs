@@ -28,6 +28,7 @@ ppNumValue tag n = case tag of
     TagSensingMethod     -> ppTagSensingMethod n
     TagSubjectDistanceRange -> ppTagSubjectDistanceRange n
     TagFocalPlaneResolutionUnit -> ppFocalPlaneResolutionUnit n
+    TagPhotometricInterpretation -> ppTagPhotometricInterpretation n
     TagGPSAltitudeRef    -> ppTagGPSAltitudeRef n
     _                    -> show n
 
@@ -249,6 +250,23 @@ ppTagGPSAltitudeRef :: Int -> String
 ppTagGPSAltitudeRef n = case n of
     0 -> "Sea level"
     1 -> "Below sea level"
+    _ -> undef n
+
+-- | Pretty printer for the tag PhotometricInterpretation
+ppTagPhotometricInterpretation :: Int -> String
+ppTagPhotometricInterpretation n = case n of
+    0 -> "WhiteIsZero"
+    1 -> "BlackIsZero"
+    2 -> "RGB"
+    3 -> "Palette color"
+    4 -> "Transparency Mask"
+    5 -> "Seperated, usually CMYK"
+    6 -> "YCbCr"
+    8 -> "CIE L*a*b*"
+    9 -> "CIE L*a*b*"
+    10 -> "CIE L*a*b*"
+    32803 -> "CFA (Color Filter Array)"
+    34892 -> "LinearRaw"
     _ -> undef n
 
 -- | Report a tag we don't process properly. We don't yet know the tag!!
