@@ -57,13 +57,12 @@ readIFDFileDirs dirTag offset getWords bsExif =
     
 -- | Read a single IFD File Directory from a given offset
 readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
-readIFDFileDir offset getWords = runGet (getIFDFileDir offset getWords) 
-
-
--- | Get IFD directory and the offset pointing to the next chained IFD.
-getIFDFileDir :: Int -> GetWords -> Get (Offset, IFDFileDir)
-getIFDFileDir nOffset getWords@(getWord16, getWord32) = do
-           skip nOffset
+readIFDFileDir offset getWords@(getWord16, getWord32) = runGet getIFDFileDir
+  where
+    -- Get IFD directory and the offset pointing to the next chained IFD.
+    getIFDFileDir :: Get (Offset, IFDFileDir)
+    getIFDFileDir = do
+           skip offset
            nEntries <- getWord16
            block <- getIFDFileDirEntries (fromIntegral nEntries) getWords
            next <- getWord32
@@ -71,22 +70,21 @@ getIFDFileDir nOffset getWords@(getWord16, getWord32) = do
 
 -- | Get all the entries of an IFD File Dir
 getIFDFileDirEntries :: Int -> GetWords -> Get IFDFileDir
-getIFDFileDirEntries count getWords =
-    if count == 0 
+getIFDFileDirEntries count getWords@(getWord16, getWord32) =
+    if count == 0
         then return []
         else do
-           entry <- getIFDFileEntry getWords
+           entry <- getIFDFileEntry
            entries <- getIFDFileDirEntries (count - 1) getWords
            return $ entry : entries
-
--- | Get a single IFD file entry.
-getIFDFileEntry ::  GetWords -> Get IFDFileEntry
-getIFDFileEntry (getWord16, getWord32)  = do
-    tagNr <- getWord16
-    format <- getWord16
-    comps <- getWord32
-    strBsValue <- getLazyByteString 4
-    return $ IFDFileEntry tagNr format (fromIntegral comps) strBsValue
+    where
+      -- Get a single IFD file entry.
+      getIFDFileEntry = do
+          tagNr <- getWord16
+          format <- getWord16
+          comps <- getWord32
+          strBsValue <- getLazyByteString 4
+          return $ IFDFileEntry tagNr format (fromIntegral comps) strBsValue
 
 -- | Convert IFDFileDir to IFDDataDir.
 convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDataDir
@@ -155,13 +153,12 @@ stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByt
 stringValue IFDGPS TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue     _  _       = directByte strBsValue
 stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
-stringValue dirTag _ len strBsValue getWord32 bsExif = runGet (getStringValue len offset) bsExif
+stringValue dirTag _ len strBsValue getWord32 bsExif = runGet getStringValue bsExif
     where
         offset = fromIntegral (runGet getWord32 strBsValue)
-        getStringValue :: Int -> Int -> Get String
-        getStringValue len offset = do
+        getStringValue = do
             skip offset
-            lazy <- getLazyByteString $ fromIntegral (len - 1) 
+            lazy <- getLazyByteString $ fromIntegral (len - 1)
             return $ unpackLazyBS lazy
 
 -- | Fetch a direct byte
@@ -170,14 +167,14 @@ directByte strBsValue = take 1 (unpackLazyBS strBsValue)
 
 -- | Read the rational values of on exif tag
 rationalValues :: Int -> Int -> BL.ByteString -> GetWords -> [(Int, Int)]
-rationalValues comps offset bsExif words = runGet (getRationalValues words comps offset) bsExif
+rationalValues comps offset bsExif words@(getWord16, getWord32) = runGet getRationalValues bsExif
     where
-        getRationalValues :: GetWords -> Int -> Int -> Get [(Int,Int)]
-        getRationalValues words comps offset = do
+        getRationalValues :: Get [(Int,Int)]
+        getRationalValues = do
             skip offset
-            replicateM comps (getRationalValue words) 
-        getRationalValue :: GetWords -> Get (Int, Int)
-        getRationalValue words@(getWord16, getWord32) = do
+            replicateM comps getRationalValue
+        getRationalValue :: Get (Int, Int)
+        getRationalValue = do
             num <- getWord32
             denum <- getWord32
             return (fromIntegral num, fromIntegral denum)
@@ -211,18 +208,23 @@ toStdTag t = case t of
    0x0101 -> TagImageLength
    0x0102 -> TagBitsPerSample
    0x0103 -> TagCompression
+   0x0106 -> TagPhotometricInterpretation
    0x010e -> TagImageDescription
    0x010f -> TagMake
    0x0110 -> TagModel
    0x0112 -> TagOrientation
+   0x0115 -> TagSamplesPerPixel
    0x011a -> TagXResolution
    0x011b -> TagYResolution
    0x0128 -> TagResolutionUnit
    0x0131 -> TagSoftware
    0x0132 -> TagDateTime
    0x013b -> TagArtist
+   0x013e -> TagWhitePoint
+   0x013f -> TagPrimaryChromaticities
    0x0201 -> TagJPEGInterchangeFormat
    0x0202 -> TagJPEGInterchangeFormatLength
+   0x0211 -> TagYCbCrCoefficients
    0x0213 -> TagYCbCrPositioning
    0x1001 -> TagRelatedImageWidth
    0x1002 -> TagRelatedImageLength
@@ -241,6 +243,7 @@ toStdTag t = case t of
    0x9203 -> TagBrightnessValue
    0x9204 -> TagExposureBiasValue
    0x9205 -> TagMaxApertureValue
+   0x9296 -> TagSubjectDistance
    0x9207 -> TagMeteringMode
    0x9208 -> TagLightSource
    0x9209 -> TagFlash
@@ -274,6 +277,7 @@ toStdTag t = case t of
    0xa40a -> TagSharpness
    0xa40c -> TagSubjectDistanceRange
    0xa420 -> TagImageUniqueID
+   0xa500 -> TagGamma
    0xc4a5 -> TagPrintImageMatching
    0xc6d2 -> TagPanasonicTitle1
    0xc6d3 -> TagPanasonicTitle2
