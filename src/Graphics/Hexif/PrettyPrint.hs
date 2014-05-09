@@ -46,6 +46,7 @@ ppStrValue :: ExifTag -> String -> String
 ppStrValue TagXPAuthor strVal = removeNull strVal
 ppStrValue TagXPTitle strVal = removeNull  strVal
 ppStrValue TagGPSVersionID strVal = intersperse '.' strVal
+ppStrValue TagGPSAltitudeRef strVal= ppTagGPSAltitudeRef strVal
 ppStrValue _ strVal = rtrimX00 strVal
 
 -- | Remove trailing hex zeros 0x00 from strings
@@ -91,3 +92,10 @@ ppSceneType value =
       then "Directly photographed" 
       else "(unknown)"
    
+-- | Pretty printer for the tag GPSAltitudeRef
+ppTagGPSAltitudeRef :: String -> String
+ppTagGPSAltitudeRef s = case s of
+    "0" -> "Sea level"
+    "1" -> "Below sea level"
+    _ -> "unknown " ++ s
+

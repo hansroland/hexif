@@ -128,7 +128,8 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
       exifTag = toExifTag dirTag tag
       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
       offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
-      byteValues TagGPSVersionID  _ _ = concatMap show (BL.unpack strBsValue)
+      byteValues TagGPSVersionID   _ _ = concatMap show (BL.unpack strBsValue)
+      byteValues TagGPSAltitudeRef _ _ = show $ head $ BL.unpack strBsValue
       byteValues _ offset len =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM len getWord8)  bsExif
       -- formats
       -- 0x0001 = unsigned byte
