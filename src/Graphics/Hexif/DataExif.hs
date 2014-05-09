@@ -87,12 +87,14 @@ data ExifTag = TagInteroperabilityIndex
              | TagSoftware
              | TagDateTime
              | TagArtist
+             | TagHostComputer
              | TagWhitePoint
              | TagPrimaryChromaticities
              | TagJPEGInterchangeFormat
              | TagJPEGInterchangeFormatLength
              | TagYCbCrCoefficients
              | TagYCbCrPositioning
+             | TagReferenceBlackWhite
              | TagRelatedImageWidth
              | TagRelatedImageLength
              | TagCopyright

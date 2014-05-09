@@ -222,12 +222,14 @@ toStdTag t = case t of
    0x0131 -> TagSoftware
    0x0132 -> TagDateTime
    0x013b -> TagArtist
+   0x013c -> TagHostComputer
    0x013e -> TagWhitePoint
    0x013f -> TagPrimaryChromaticities
    0x0201 -> TagJPEGInterchangeFormat
    0x0202 -> TagJPEGInterchangeFormatLength
    0x0211 -> TagYCbCrCoefficients
    0x0213 -> TagYCbCrPositioning
+   0x0214 -> TagReferenceBlackWhite
    0x1001 -> TagRelatedImageWidth
    0x1002 -> TagRelatedImageLength
    0x8298 -> TagCopyright
