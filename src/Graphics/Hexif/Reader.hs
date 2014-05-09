@@ -8,7 +8,7 @@ import Graphics.Hexif.Utils
 
 import Data.Char (chr, ord)
 import Data.List (partition)
-import Control.Monad(replicateM)
+import Control.Monad(replicateM, mapM)
 
 import Data.Binary
 import Data.Binary.Get
@@ -115,7 +115,7 @@ convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDDat
 convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) =
    case format of
        0  -> IFDNum exifTag Fmt00 len                                                  -- debug entry
-       1  -> IFDStr exifTag Fmt01 (byteValues offsetOrValue32 len)
+       1  -> IFDStr exifTag Fmt01 (byteValues exifTag offsetOrValue32 len)
        2  -> IFDStr exifTag Fmt02 (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
        3  -> IFDNum exifTag Fmt03 offsetOrValue16
        4  -> IFDNum exifTag Fmt04 offsetOrValue32
@@ -128,7 +128,8 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
       exifTag = toExifTag dirTag tag
       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
       offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
-      byteValues offset len =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM len getWord8)  bsExif
+      byteValues TagGPSVersionID  _ _ = concatMap show (BL.unpack strBsValue)
+      byteValues _ offset len =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM len getWord8)  bsExif
       -- formats
       -- 0x0001 = unsigned byte
       -- 0x0002 = ascii string
@@ -146,7 +147,7 @@ convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag for
 stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
 stringValue IFDExif TagSubsecTime len strBsValue          _  _       = take len (unpackLazyBS strBsValue)
 stringValue IFDExif TagSubSecTimeOriginal len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
-stringValue IFDExif TagSubSecTimeDigitized len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
+stringValue IFDExif TagSubSecTimeDigitized len strBsValue  _  _      = take len (unpackLazyBS strBsValue)
 stringValue IFDGPS TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSLongitudeRef _ strBsValue        _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue

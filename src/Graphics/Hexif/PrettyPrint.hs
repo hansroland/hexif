@@ -8,7 +8,7 @@ import Graphics.Hexif.DataExif
 import Graphics.Hexif.PrettyPrintInt
 import Graphics.Hexif.PrettyPrintRat
 import Text.Printf (printf)
-import Data.List(intercalate)
+import Data.List(intersperse)
 
 import Data.Char (chr, ord)
 
@@ -45,6 +45,7 @@ ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 ppStrValue :: ExifTag -> String -> String
 ppStrValue TagXPAuthor strVal = removeNull strVal
 ppStrValue TagXPTitle strVal = removeNull  strVal
+ppStrValue TagGPSVersionID strVal = intersperse '.' strVal
 ppStrValue _ strVal = rtrimX00 strVal
 
 -- | Remove trailing hex zeros 0x00 from strings
@@ -54,7 +55,6 @@ rtrimX00 = reverse . dropWhile (\c -> ord c == 0) . reverse
 -- | Little support function for ppStrValue
 removeNull = filter (\c -> ord c /= 00)
      
-
 -- | Pretty printer for the Exif version
 ppExifVersion :: String -> String
 ppExifVersion value = "Exif Version " ++ show num
