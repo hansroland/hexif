@@ -8,29 +8,29 @@ import Text.Printf (printf)
 
 -- | pretty printer for exif tags with multiple rational values.
 ppRationalValues :: ExifTag -> [(Int,Int)] -> String
-ppRationalValues tag []       = "No values"
-ppRationalValues tag (r : []) = ppRationalValue tag r
+ppRationalValues _ []       = "No values"
+ppRationalValues tg (r : []) = ppRationalValue tg r
 ppRationalValues TagGPSLatitude rs      = ppGPSLongLatt rs
 ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
 ppRationalValues TagGPSTimeStamp rs     = ppGPSTimeStamp $ map rat2Float rs
-ppRationalValues tag rs     = concatMap fmtRat' rs
+ppRationalValues _ rs     = concatMap fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
 -- | pretty printer for exif tags with a single rationalvalue.
 ppRationalValue :: ExifTag -> (Int,Int) -> String
-ppRationalValue tag r
-    | tag == TagExposureTime = fmtRatWithSlash r ++ " sec."
-    | tag == TagFNumber = "f/" ++ fmtRatFloat r
-    | tag == TagCompressedBitsPerPixel = ' ' : fmtRat r
-    | tag == TagExposureBiasValue = ppExposureBiasValue r
-    | tag == TagFocalLength = ppFocalLength r
-    | tag == TagApertureValue = ppApertureValue f
-    | tag == TagMaxApertureValue = ppApertureValue f
-    | tag == TagShutterSpeedValue = ppShutterSpeedValue f
-    | tag == TagDigitalZoomRatio = printf "%.4f" f
-    | tag == TagBrightnessValue = ppBrightnessValue f
+ppRationalValue t r
+    | t == TagExposureTime = fmtRatWithSlash r ++ " sec."
+    | t == TagFNumber = "f/" ++ fmtRatFloat r
+    | t == TagCompressedBitsPerPixel = ' ' : fmtRat r
+    | t == TagExposureBiasValue = ppExposureBiasValue r
+    | t == TagFocalLength = ppFocalLength r
+    | t == TagApertureValue = ppApertureValue f
+    | t == TagMaxApertureValue = ppApertureValue f
+    | t == TagShutterSpeedValue = ppShutterSpeedValue f
+    | t == TagDigitalZoomRatio = printf "%.4f" f
+    | t == TagBrightnessValue = ppBrightnessValue f
     | otherwise = fmtRat r
     where f = rat2Float r
 
@@ -88,15 +88,16 @@ ppBrightnessValue f = printf "%.2f EV (%.2f cd/m^2)" f pf
 -- | Pretty print the values for the latitude and longitude GPS fields.
 ppGPSLongLatt :: [(Int,Int)] -> String
 ppGPSLongLatt rs = fmtLL fs
-  where 
-    fmtLL fs@(r1:r2:r3:[]) = printf "%d, %d, %.2f" d m s
-    fmtLL  _ = "verify data format"
+  where
     fs = map rat2Float rs
-    (d,m,s)  = degNorm fs
+    fmtLL (r1:r2:r3:[]) = printf "%d, %d, %.2f" d m s
+      where
+        (d,m,s)  = degNorm r1 r2 r3
+    fmtLL  _ = "verify data format"
 
 -- | Support function for ppGPSLongLat: Normalize degrees
-degNorm :: [Float] -> (Int, Int, Float)
-degNorm (d:m:s:[]) = (i1, i2, f3)
+degNorm :: Float -> Float -> Float -> (Int, Int, Float)
+degNorm d m s = (i1, i2, f3)
   where
     (i1, f2) = carry d m
     (i2, f3) = carry m s

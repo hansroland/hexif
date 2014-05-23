@@ -55,7 +55,7 @@ import System.FilePath
 allTags :: Exif -> [ExifField]
 allTags exif = filter removeDebugs (allTagsInclDebug exif)
   where
-    removeDebugs f = exifTag f `notElem` 
+    removeDebugs (ExifField tg _) = tg `notElem`
       [ TagSubDirIFDMain
       , TagSubDirIFDExif
       , TagSubDirIFDGPS
@@ -65,11 +65,14 @@ allTags exif = filter removeDebugs (allTagsInclDebug exif)
 
 -- | Return the value of a single Exif tag.
 getTag :: Exif -> ExifTag -> Maybe String
-getTag exif tag = 
+getTag exif tg =
      if null tags 
          then Nothing
-         else Just $ value $ head tags
-     where tags = filter (\ef -> exifTag ef == tag) (allTags exif)
+         else Just $ exValue $ head tags
+     where
+       tags = filter (\ef -> exTag ef == tg) (allTags exif)
+       exTag (ExifField t _) = t
+       exValue (ExifField _ v) = v
 
 -- | Return a list of all ExifFields including the debug tags.
 --   Do NOT use this function. It will be deleted later.
@@ -90,7 +93,7 @@ fromFile fn = do
 
 -- | Little getter function to extract the directories from an Exif value
 dirs :: Exif -> [IFDDataDir]
-dirs (Exif dirs _) = dirs
+dirs (Exif d _) = d
 
 -- | Debugging function: Write the Exif file separatly to disk
 --   Do not use this function. It's mainly used for debugging

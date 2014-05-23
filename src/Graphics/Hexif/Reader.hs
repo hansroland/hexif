@@ -6,9 +6,8 @@ module Graphics.Hexif.Reader where
 import Graphics.Hexif.DataExif
 import Graphics.Hexif.Utils
 
-import Data.Char (chr, ord)
-import Data.List (partition)
-import Control.Monad(replicateM, mapM)
+import Data.Char (chr)
+import Control.Monad(replicateM)
 
 import Data.Binary
 import Data.Binary.Get
@@ -35,10 +34,10 @@ readHeader = runGet getHeader
     getHeader = do
         -- Tiff Header 
         tiffAlign <- getWord16be
-        let getWords = if fromIntegral tiffAlign == 0x4949
+        let getWords = if fromIntegral tiffAlign == (0x4949::Int)
             then (getWord16le, getWord32le)
             else (getWord16be, getWord32be) 
-        const2A <- getByteString 2
+        _ <- getByteString 2						-- const 2A
         -- Get offset to main directory
         offset <- snd getWords
         return (getWords, fromIntegral offset)
@@ -81,10 +80,10 @@ getIFDFileDirEntries count getWords@(getWord16, getWord32) =
       -- Get a single IFD file entry.
       getIFDFileEntry = do
           tagNr <- getWord16
-          format <- getWord16
+          fmt <- getWord16
           comps <- getWord32
           strBsValue <- getLazyByteString 4
-          return $ IFDFileEntry tagNr format (fromIntegral comps) strBsValue
+          return $ IFDFileEntry tagNr fmt (fromIntegral comps) strBsValue
 
 -- | Convert IFDFileDir to IFDDataDir.
 convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDataDir
@@ -94,11 +93,11 @@ convertDir dirTag bsExif getWords = map conf
  
 -- | Convert a single IFDFile entry to an IFDData.
 convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tag format len strBsValue) = 
+convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tg _ _ _) = 
    case toTag of
        Just dirTag -> convertSubEntry dirTag bsExif getWords fileEntry
        Nothing     -> convertStdEntry dirTag bsExif getWords fileEntry
-   where toTag = toDirTag tag 
+   where toTag = toDirTag tg 
 
 -- | convert a sub entry. 
 -- | A sub entry contains a new IFD File directory.
@@ -112,17 +111,17 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
 -- | Convert a standard entry.
 -- A standard entry represents a single tag and its value.
 convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertStdEntry dirTag bsExif words@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) =
+convertStdEntry dirTag bsExif getWords@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) =
    case format of
        0  -> IFDNum exifTag Fmt00 len                                                  -- debug entry
        1  -> IFDStr exifTag Fmt01 (byteValues exifTag offsetOrValue32 len)
        2  -> IFDStr exifTag Fmt02 (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
        3  -> IFDNum exifTag Fmt03 offsetOrValue16
        4  -> IFDNum exifTag Fmt04 offsetOrValue32
-       5  -> IFDRat exifTag Fmt05 (rationalValues len offsetOrValue32 bsExif words)
+       5  -> IFDRat exifTag Fmt05 (rationalValues len offsetOrValue32 bsExif getWords)
        7  -> IFDUdf exifTag Fmt07 len (unpackLazyBS strBsValue)
        9  -> IFDNum exifTag Fmt09 offsetOrValue32
-       10 -> IFDRat exifTag Fmt10 (rationalValues len offsetOrValue32 bsExif words)
+       10 -> IFDRat exifTag Fmt10 (rationalValues len offsetOrValue32 bsExif getWords)
        _      -> error $ "Format " ++ show format ++ " not yet implemented"
    where 
       exifTag = toExifTag dirTag tag
@@ -154,7 +153,7 @@ stringValue IFDGPS TagGPSLongitudeRef _ strBsValue        _  _       = directByt
 stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue     _  _       = directByte strBsValue
-stringValue dirTag TagInteroperabilityIndex  len strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
+stringValue dirTag TagInteroperabilityIndex  _ strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
 stringValue dirTag _ len strBsValue getWord32 bsExif = runGet getStringValue bsExif
     where
         offset = fromIntegral (runGet getWord32 strBsValue)
@@ -169,7 +168,7 @@ directByte strBsValue = take 1 (unpackLazyBS strBsValue)
 
 -- | Read the rational values of on exif tag
 rationalValues :: Int -> Int -> BL.ByteString -> GetWords -> [(Int, Int)]
-rationalValues comps offset bsExif words@(getWord16, getWord32) = runGet getRationalValues bsExif
+rationalValues comps offset bsExif (getWord16, getWord32) = runGet getRationalValues bsExif
     where
         getRationalValues :: Get [(Int,Int)]
         getRationalValues = do
@@ -198,8 +197,8 @@ dirTagToWord16 IFDGPS = 0xFF04
 
 -- | Convert a Word16 number together with its directory tag to an Exif Tag.
 toExifTag :: DirTag -> Word16 -> ExifTag
-toExifTag IFDGPS tag = toGPSTag tag
-toExifTag _      tag = toStdTag tag
+toExifTag IFDGPS tg = toGPSTag tg
+toExifTag _      tg = toStdTag tg
 
 -- | Convert a Word16 number to standard Exif tag.
 toStdTag :: Word16 -> ExifTag

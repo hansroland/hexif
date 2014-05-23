@@ -6,7 +6,6 @@ module Graphics.Hexif.Utils where
 
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (chr)
-import Data.List (intersperse)
 
 -- | Convert a lazy ByteString into a normal Haskell String
 -- Normal pack/unpack are refused by GHC

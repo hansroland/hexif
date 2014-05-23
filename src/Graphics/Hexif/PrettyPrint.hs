@@ -20,25 +20,25 @@ prettyPrint entries = map ppIFDData (flatten entries)
 -- Note: subDirs will always be printed at the end
 flatten :: IFDDataDir -> [IFDData]
 flatten [] = []
-flatten (IFDSub tag _ ifdDir : ds) = flatten ds ++ flatten ifdDir
+flatten (IFDSub _ _ ifdDir : ds) = flatten ds ++ flatten ifdDir
 flatten (d : ds) = d : flatten ds
 
 -- | Pretty print a single exif field
 ppIFDData :: IFDData -> ExifField
-ppIFDData (IFDRat tag _ rats) = ExifField tag (ppRationalValues tag rats)
-ppIFDData (IFDNum tag _ nVal) = ExifField tag (ppNumValue tag nVal)
-ppIFDData (IFDStr tag _ strVal) = ExifField tag (ppStrValue tag strVal)
-ppIFDData (IFDUdf tag _ len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
-ppIFDData (IFDSub tag _ ifdDir) = error $ "Directory encountered " ++ show tag
+ppIFDData (IFDRat tg _ rats) = ExifField tg (ppRationalValues tg rats)
+ppIFDData (IFDNum tg _ nVal) = ExifField tg (ppNumValue tg nVal)
+ppIFDData (IFDStr tg _ strVal) = ExifField tg (ppStrValue tg strVal)
+ppIFDData (IFDUdf tg _ len strVal) = ExifField tg (ppUndefinedValue tg len strVal)
+ppIFDData (IFDSub tg _ _) = error $ "Directory encountered " ++ show tg
 
 -- | Pretty printers for Undefined Values
 ppUndefinedValue :: ExifTag -> Int -> String -> String
-ppUndefinedValue TagExifVersion len value = ppExifVersion value
-ppUndefinedValue TagFlashPixVersion len value = ppFlashPixVersion value
-ppUndefinedValue TagComponentsConfiguration len value = ppComponentsConfiguration value
-ppUndefinedValue TagFileSource len value = ppFileSource value
-ppUndefinedValue TagSceneType len value = ppSceneType value
-ppUndefinedValue TagInteroperabilityVersion len value = value
+ppUndefinedValue TagExifVersion _ value = ppExifVersion value
+ppUndefinedValue TagFlashPixVersion _ value = ppFlashPixVersion value
+ppUndefinedValue TagComponentsConfiguration _ value = ppComponentsConfiguration value
+ppUndefinedValue TagFileSource _ value = ppFileSource value
+ppUndefinedValue TagSceneType _ value = ppSceneType value
+ppUndefinedValue TagInteroperabilityVersion _ value = value
 ppUndefinedValue _ len _ = show len ++ " bytes undefined data"
 
 -- | PrettyPrinters for String values
@@ -54,6 +54,7 @@ rtrimX00 :: String -> String
 rtrimX00 = reverse . dropWhile (\c -> ord c == 0) . reverse
 
 -- | Little support function for ppStrValue
+removeNull :: String -> String
 removeNull = filter (\c -> ord c /= 00)
      
 -- | Pretty printer for the Exif version
@@ -77,6 +78,7 @@ ppComponentsConfiguration conf = unwords $ map ppComps conf
        ppComps (ord -> 4) = "R"
        ppComps (ord -> 5) = "G"
        ppComps (ord -> 6) = "B"
+       ppComps (ord -> _) = "??"
 
 -- | Pretty printer for the file source
 ppFileSource :: String -> String

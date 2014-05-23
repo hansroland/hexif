@@ -15,7 +15,6 @@ import Data.Binary.Get   {-( Get
                       , bytesRead
                       )   -}
 
-import System.IO
 import qualified Data.ByteString.Lazy as BL
 
 -- | A JPEG file is a list of so called segments
@@ -52,7 +51,6 @@ readJpegFromFile fn = do
    bsJpeg <- BL.readFile fn
    return $ readJpeg bsJpeg
 
-
 -- | Extract the Exif segment from a JPEG value
 extractExif :: Jpeg -> BL.ByteString
 extractExif jpeg = segData $ head (filter (\seg -> segMarker seg == 0xFFE1) (segments jpeg))
@@ -81,7 +79,7 @@ getSegments = do
 getSegment :: Get JpegSegment
 getSegment = do
      marker <- getWord16be
-     offset <- bytesRead
-     len <- getWord16be 
-     segData <- getLazyByteString (fromIntegral len - 2)
-     return $ JpegSegment (fromIntegral marker) (fromIntegral len) segData (fromIntegral offset - 2)
+     offst <- bytesRead
+     len <- getWord16be
+     sgData <- getLazyByteString (fromIntegral len - 2)
+     return $ JpegSegment (fromIntegral marker) (fromIntegral len) sgData (fromIntegral offst - 2)

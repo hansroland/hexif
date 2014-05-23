@@ -7,7 +7,7 @@ import Graphics.Hexif.DataExif
 
 -- | PrettyPrint functions for all Integer values.
 ppNumValue :: ExifTag -> Int -> String
-ppNumValue tag n = case tag of
+ppNumValue tg n = case tg of
     TagCompression       -> ppCompression n
     TagResolutionUnit    -> ppResolutionUnit n
     TagOrientation       -> ppOrientation n
@@ -243,6 +243,7 @@ ppFocalPlaneResolutionUnit n = case n of
     1 -> "No absolute unit of measurement"
     2 -> "Inch"
     3 -> "Centimeter"
+    _ -> undef n
 
 -- | Pretty printer for the tag PhotometricInterpretation
 ppTagPhotometricInterpretation :: Int -> String

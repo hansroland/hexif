@@ -1,23 +1,22 @@
 
 -- | Module with the datastructures for the hexif library.
--- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
+-- This module is an internal module of Graphics.Hexif and should only be used
+-- in the hexif project!
 
 module Graphics.Hexif.DataExif where
 
 import Data.Binary
 import qualified Data.ByteString.Lazy as BL
 
--- | Datastructure with the interpreted Exif data
+-- | Datastructure with the interpreted Exif data.
 data Exif = Exif [IFDDataDir] GetWords
 
 -- | Definiton of the resulting output
-data ExifField = ExifField
-    { exifTag :: ExifTag
-    , value :: String 
-    } deriving (Eq)
+data ExifField = ExifField ExifTag String   -- exifTag value
+    deriving (Eq)
 
 instance Show ExifField where
-    show f = drop 3 (show $ exifTag f) ++ " -> " ++ value f
+    show (ExifField exifTag value) = drop 3 (show $ exifTag) ++ " -> " ++ value
 
 -- | A data directory is a list of data entries
 type IFDDataDir = [IFDData]
@@ -65,7 +64,6 @@ data Format = Fmt00                      -- debug
             | Fmt09
             | Fmt10
       deriving (Eq, Show)
-
 
 -- | Definition of all the supported Exif tags
 data ExifTag = TagInteroperabilityIndex
@@ -174,6 +172,5 @@ data ExifTag = TagInteroperabilityIndex
              | TagSubDirIFDExif
              | TagSubDirIFDGPS
              | TagSubDirIFDInterop
-             
      deriving (Eq, Show)
 
