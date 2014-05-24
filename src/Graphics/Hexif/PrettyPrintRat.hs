@@ -78,7 +78,6 @@ ppShutterSpeedValue f = printf "%.02f EV (1/%d sec.)" f (d::Int)
   where
     d = floor $ fromRational 2 ** f;
 
-
 -- | Pretty print the value of the tag BightnessValue.
 ppBrightnessValue :: Float -> String
 ppBrightnessValue f = printf "%.2f EV (%.2f cd/m^2)" f pf
@@ -100,7 +99,7 @@ degNorm :: Float -> Float -> Float -> (Int, Int, Float)
 degNorm d m s = (i1, i2, f3)
   where
     (i1, f2) = carry d m
-    (i2, f3) = carry m s
+    (i2, f3) = carry (m + f2) s
  
 -- | Support function for ppGPSLongLatt: Carry fractional parts to right
 carry :: Float -> Float -> (Int, Float)
