@@ -27,23 +27,10 @@ data Jpeg = Jpeg
 -- | A segment contains an identifying marker and a length
 data JpegSegment = JpegSegment
     { segMarker :: Int 
-    , segLen :: Int
     , segData :: BL.ByteString 
-    , offset :: Integer              -- for debugging only
+    -- , offset :: Integer              -- for debugging only
     }
     deriving (Eq)
-
-{-
-instance Show JpegSegment 
-  where
-    show = showSegment
-
-showSegment :: JpegSegment -> String
-showSegment seg =
-   "JpegSegment: Marker = " ++ showHex (segMarker seg)  "" ++ " len: " ++ show (segLen seg) ++ 
-   " offset = " ++ show (offset seg) ++
-   " data   = " ++ prettyHex (B.take 32 $segData seg)
--}
   
 -- | Read a Jpeg value from a file
 readJpegFromFile :: String -> IO Jpeg
@@ -61,7 +48,7 @@ readJpeg = runGet getJpeg
   where
     getJpeg :: Get Jpeg
     getJpeg = do
-        jpegStart <- getWord16be
+        _ <- getWord16be
         segs <- getSegments 
         return $ Jpeg segs 
 
@@ -79,7 +66,7 @@ getSegments = do
 getSegment :: Get JpegSegment
 getSegment = do
      marker <- getWord16be
-     offst <- bytesRead
+     _ <- bytesRead
      len <- getWord16be
      sgData <- getLazyByteString (fromIntegral len - 2)
-     return $ JpegSegment (fromIntegral marker) (fromIntegral len) sgData (fromIntegral offst - 2)
+     return $ JpegSegment (fromIntegral marker) sgData

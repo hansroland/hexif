@@ -52,7 +52,7 @@ readIFDFileDirs dirTag offset getWords bsExif =
   where
     (next, block) = readIFDFileDir offset getWords bsExif
     blocks = readIFDFileDirs dirTag next getWords bsExif
-    debug = IFDFileEntry (dirTagToWord16 dirTag) 0 offset (BL.pack [])                            -- debug entry
+    debug = IFDFileEntry (dirTagToWord16 dirTag) 0 offset (BL.pack [])  -- debug entry
     
 -- | Read a single IFD File Directory from a given offset
 readIFDFileDir :: Offset -> GetWords -> BL.ByteString -> (Offset, IFDFileDir)
@@ -86,23 +86,22 @@ getIFDFileDirEntries count getWords@(getWord16, getWord32) =
           return $ IFDFileEntry tagNr fmt (fromIntegral comps) strBsValue
 
 -- | Convert IFDFileDir to IFDDataDir.
-convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDataDir
+convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDFileDir -> IFDDir
 convertDir dirTag bsExif getWords = map conf
   where 
     conf = convertEntry dirTag bsExif getWords
  
 -- | Convert a single IFDFile entry to an IFDData.
 convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertEntry dirTag bsExif getWords  fileEntry@(IFDFileEntry tg _ _ _) = 
-   case toTag of
-       Just dirTag -> convertSubEntry dirTag bsExif getWords fileEntry
-       Nothing     -> convertStdEntry dirTag bsExif getWords fileEntry
-   where toTag = toDirTag tg 
+convertEntry dirTg bsExif getWords  fileEntry@(IFDFileEntry tg _ _ _) = 
+   case toDirTag tg of
+       Just dT   -> convertSubEntry dT bsExif getWords fileEntry
+       Nothing  -> convertStdEntry dirTg bsExif getWords fileEntry
 
 -- | convert a sub entry. 
 -- | A sub entry contains a new IFD File directory.
 convertSubEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag format len strBsValue) = IFDSub dirTag Fmt00 subDir
+convertSubEntry dirTag bsExif getWords@(_,getWord32) (IFDFileEntry _ _ _ strBsValue) = IFDSub dirTag Fmt00 subDir
     where 
       subDir = convertDir dirTag bsExif getWords fileDir 
       fileDir = concat $ readIFDFileDirs dirTag offset getWords bsExif
@@ -111,8 +110,8 @@ convertSubEntry dirTag bsExif getWords@(getWord16,getWord32) (IFDFileEntry tag f
 -- | Convert a standard entry.
 -- A standard entry represents a single tag and its value.
 convertStdEntry :: DirTag -> BL.ByteString -> GetWords -> IFDFileEntry -> IFDData
-convertStdEntry dirTag bsExif getWords@(getWord16,getWord32)  (IFDFileEntry tag format len strBsValue) =
-   case format of
+convertStdEntry dirTag bsExif getWords@(getWord16,getWord32)  (IFDFileEntry tg fmt len strBsValue) =
+   case fmt of
        0  -> IFDNum exifTag Fmt00 len                                                  -- debug entry
        1  -> IFDStr exifTag Fmt01 (byteValues exifTag offsetOrValue32 len)
        2  -> IFDStr exifTag Fmt02 (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
@@ -122,14 +121,14 @@ convertStdEntry dirTag bsExif getWords@(getWord16,getWord32)  (IFDFileEntry tag 
        7  -> IFDUdf exifTag Fmt07 len (unpackLazyBS strBsValue)
        9  -> IFDNum exifTag Fmt09 offsetOrValue32
        10 -> IFDRat exifTag Fmt10 (rationalValues len offsetOrValue32 bsExif getWords)
-       _      -> error $ "Format " ++ show format ++ " not yet implemented"
+       _      -> error $ "Format " ++ show fmt ++ " not yet implemented"
    where 
-      exifTag = toExifTag dirTag tag
+      exifTag = toExifTag dirTag tg
       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
       offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
       byteValues TagGPSVersionID   _ _ = concatMap show (BL.unpack strBsValue)
       byteValues TagGPSAltitudeRef _ _ = show $ head $ BL.unpack strBsValue
-      byteValues _ offset len =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM len getWord8)  bsExif
+      byteValues _ offset ln =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM ln getWord8)  bsExif
       -- formats
       -- 0x0001 = unsigned byte
       -- 0x0002 = ascii string
@@ -153,8 +152,8 @@ stringValue IFDGPS TagGPSLongitudeRef _ strBsValue        _  _       = directByt
 stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
 stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue     _  _       = directByte strBsValue
-stringValue dirTag TagInteroperabilityIndex  _ strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
-stringValue dirTag _ len strBsValue getWord32 bsExif = runGet getStringValue bsExif
+stringValue _ TagInteroperabilityIndex  _ strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
+stringValue _ _ len strBsValue getWord32 bsExif = runGet getStringValue bsExif
     where
         offset = fromIntegral (runGet getWord32 strBsValue)
         getStringValue = do
@@ -168,7 +167,7 @@ directByte strBsValue = take 1 (unpackLazyBS strBsValue)
 
 -- | Read the rational values of on exif tag
 rationalValues :: Int -> Int -> BL.ByteString -> GetWords -> [(Int, Int)]
-rationalValues comps offset bsExif (getWord16, getWord32) = runGet getRationalValues bsExif
+rationalValues comps offset bsExif (_, getWord32) = runGet getRationalValues bsExif
     where
         getRationalValues :: Get [(Int,Int)]
         getRationalValues = do
@@ -312,5 +311,3 @@ toGPSTag t = case t of
    0x001d -> TagGPSDateStamp
    0xff04 -> TagSubDirIFDGPS
    _ -> TagTagUnknown t
-
-

@@ -13,12 +13,12 @@ import Data.List(intersperse)
 import Data.Char (chr, ord)
 
 -- | pretty print the contents all exif fields 
-prettyPrint :: IFDDataDir -> [ExifField]
+prettyPrint :: IFDDir -> [ExifField]
 prettyPrint entries = map ppIFDData (flatten entries)
 
 -- | flaten out the tree of the directories
 -- Note: subDirs will always be printed at the end
-flatten :: IFDDataDir -> [IFDData]
+flatten :: IFDDir -> [IFDData]
 flatten [] = []
 flatten (IFDSub _ _ ifdDir : ds) = flatten ds ++ flatten ifdDir
 flatten (d : ds) = d : flatten ds

@@ -9,24 +9,24 @@ import Data.Binary
 import qualified Data.ByteString.Lazy as BL
 
 -- | Datastructure with the interpreted Exif data.
-data Exif = Exif [IFDDataDir] GetWords
+data Exif = Exif [IFDDir] GetWords
 
 -- | Definiton of the resulting output
 data ExifField = ExifField ExifTag String   -- exifTag value
     deriving (Eq)
 
 instance Show ExifField where
-    show (ExifField exifTag value) = drop 3 (show $ exifTag) ++ " -> " ++ value
+    show (ExifField exifTag value) = drop 3 (show exifTag) ++ " -> " ++ value
 
 -- | A data directory is a list of data entries
-type IFDDataDir = [IFDData]
+type IFDDir = [IFDData]
 
 -- | Definition of a logical IFD Entry together with the data
 data IFDData = IFDRat  ExifTag Format [(Int, Int)]
               | IFDNum ExifTag Format Int
               | IFDStr ExifTag Format String
               | IFDUdf ExifTag Format Int String
-              | IFDSub DirTag  Format IFDDataDir
+              | IFDSub DirTag  Format IFDDir
 
 -- | Definition of a DirTag
 data DirTag = IFDMain

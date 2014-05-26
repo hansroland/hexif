@@ -80,7 +80,7 @@ allTagsInclDebug :: Exif -> [ExifField]
 allTagsInclDebug = prettyPrint . allEntries
 
 -- | Return a list of our data entries
-allEntries :: Exif -> IFDDataDir
+allEntries :: Exif -> IFDDir
 allEntries exif = concat $ dirs exif
 
 -- | Return the exit data from a jpeg file.
@@ -92,7 +92,7 @@ fromFile fn = do
     return $ readExif bsExif
 
 -- | Little getter function to extract the directories from an Exif value
-dirs :: Exif -> [IFDDataDir]
+dirs :: Exif -> [IFDDir]
 dirs (Exif d _) = d
 
 -- | Debugging function: Write the Exif file separatly to disk
