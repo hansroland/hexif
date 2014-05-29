@@ -19,8 +19,8 @@ type Offset = Int
 -- | A list of file entries builds a directory.
 type IFDDir = [IFDEntry]
      
--- | Representation of a physical IFD Entry in the file
-data IFDEntry = IFDEntry Word16 Word16 Int BL.ByteString 
+-- | Representation of a physical IFD Entry in the exif file
+data IFDEntry = IFDEntry Word16 Word16 Int BL.ByteString
     | IFDSubDir DirTag IFDDir
     deriving (Eq, Show)
 
@@ -69,13 +69,13 @@ readIFDDir offset getWords@(getWord16, getWord32) bsExif = runGet getIFDDir bsEx
     -- Get IFD directory and the offset pointing to the next chained IFD.
     getIFDDir :: Get (Offset, IFDDir)
     getIFDDir = do
-           skip offset
-           nEntries <- getWord16
-           block <- getIFDDirEntries (fromIntegral nEntries) getWords bsExif
-           next <- getWord32
-           return (fromIntegral next, block)
+        skip offset
+        nEntries <- getWord16
+        block <- getIFDDirEntries (fromIntegral nEntries) getWords bsExif
+        next <- getWord32
+        return (fromIntegral next, block)
 
--- | Get all the entries of an IFD 
+-- | Get all the entries of an IFD
 getIFDDirEntries :: Int -> GetWords -> BL.ByteString -> Get IFDDir
 getIFDDirEntries count getWords@(getWord16, getWord32) bsExif =
     if count == 0
@@ -102,18 +102,16 @@ getIFDDirEntries count getWords@(getWord16, getWord32) bsExif =
 
 -- | Convert IFD Entries to DataEntries
 convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDDir -> DataBlock
-convertDir dirTag bsExif getWords ifdDir = map (convertEntry dirTag bsExif getWords) ifdDir
+convertDir dirTag bsExif getWords = map (convertEntry dirTag bsExif getWords)
 
 -- | Convert a single IFDEntry
 convertEntry :: DirTag -> BL.ByteString -> GetWords -> IFDEntry -> DataEntry
 convertEntry _ bsExif getWords (IFDSubDir dTg ifdDir) = DataSub dTg (convertDir dTg bsExif getWords ifdDir)
-convertEntry dirTag bsExif getWords@(getWord16, getWord32) (IFDEntry tg fmt len strBsValue) = cnvtStdEntry
-  where
-     cnvtStdEntry =    
-       case fmt of
+convertEntry dirTag bsExif getWords@(getWord16, getWord32) (IFDEntry tg fmt len strBsValue) =
+   case fmt of
          0  -> DataNum exifTag Fmt00 len                                                  -- debug entry
          1  -> DataStr exifTag Fmt01 (byteValues exifTag offsetOrValue32 len)
-         2  -> DataStr exifTag Fmt02 (stringValue dirTag exifTag len strBsValue getWord32 bsExif)
+         2  -> DataStr exifTag Fmt02 (stringValue exifTag len strBsValue getWord32 bsExif)
          3  -> DataNum exifTag Fmt03 offsetOrValue16
          4  -> DataNum exifTag Fmt04 offsetOrValue32
          5  -> DataRat exifTag Fmt05 (rationalValues len offsetOrValue32 bsExif getWords)
@@ -121,38 +119,39 @@ convertEntry dirTag bsExif getWords@(getWord16, getWord32) (IFDEntry tg fmt len 
          9  -> DataNum exifTag Fmt09 offsetOrValue32
          10 -> DataRat exifTag Fmt10 (rationalValues len offsetOrValue32 bsExif getWords)
          _      -> error $ "Format " ++ show fmt ++ " not yet implemented"
-     exifTag = toExifTag dirTag tg
-     offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
-     offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
-     byteValues TagGPSVersionID   _ _ = concatMap show (BL.unpack strBsValue)
-     byteValues TagGPSAltitudeRef _ _ = show $ head $ BL.unpack strBsValue
-     byteValues _ offset ln =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM ln getWord8)  bsExif
-     -- formats
-     -- 0x0001 = unsigned byte
-     -- 0x0002 = ascii string
-     -- 0x0003 = unsigned short
-     -- 0x0004 = unsigned long
-     -- 0x0005 = unsigned rational
-     -- 0x0007 = undefined
-     -- 0x0009 = signed long
-     -- 0x000A = signed rationale
+     where
+       exifTag = toExifTag dirTag tg
+       offsetOrValue32 = fromIntegral (runGet getWord32 strBsValue)
+       offsetOrValue16 = fromIntegral (runGet getWord16 strBsValue)
+       byteValues TagGPSVersionID   _ _ = concatMap show (BL.unpack strBsValue)
+       byteValues TagGPSAltitudeRef _ _ = show $ head $ BL.unpack strBsValue
+       byteValues _ offset ln =  map (chr . fromIntegral) $ runGet (skip offset >> replicateM ln getWord8)  bsExif
+       -- formats
+       -- 0x0001 = unsigned byte
+       -- 0x0002 = ascii string
+       -- 0x0003 = unsigned short
+       -- 0x0004 = unsigned long
+       -- 0x0005 = unsigned rational
+       -- 0x0007 = undefined
+       -- 0x0009 = signed long
+       -- 0x000A = signed rationale
 
 
 -- subfunctions of convert
 
--- | Read out a string value. 
+-- | Read out a string value.
 -- Note: Some tags have non standard representation -> Special cases
-stringValue :: DirTag -> ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
-stringValue IFDExif TagSubsecTime len strBsValue          _  _       = take len (unpackLazyBS strBsValue)
-stringValue IFDExif TagSubSecTimeOriginal len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
-stringValue IFDExif TagSubSecTimeDigitized len strBsValue  _  _      = take len (unpackLazyBS strBsValue)
-stringValue IFDGPS TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
-stringValue IFDGPS TagGPSLongitudeRef _ strBsValue        _  _       = directByte strBsValue
-stringValue IFDGPS TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue
-stringValue IFDGPS TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
-stringValue IFDGPS TagGPSImgDirectionRef _ strBsValue     _  _       = directByte strBsValue
-stringValue _ TagInteroperabilityIndex  _ strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
-stringValue _ _ len strBsValue getWord32 bsExif = runGet getStringValue bsExif
+stringValue :: ExifTag -> Int -> BL.ByteString -> Get Word32 -> BL.ByteString -> String
+stringValue TagSubsecTime len strBsValue          _  _       = take len (unpackLazyBS strBsValue)
+stringValue TagSubSecTimeOriginal len strBsValue  _  _       = take len (unpackLazyBS strBsValue)
+stringValue TagSubSecTimeDigitized len strBsValue  _  _      = take len (unpackLazyBS strBsValue)
+stringValue TagGPSLatitudeRef _ strBsValue         _  _       = directByte strBsValue
+stringValue TagGPSLongitudeRef _ strBsValue        _  _       = directByte strBsValue
+stringValue TagGPSDestLatitudeRef _ strBsValue     _  _       = directByte strBsValue
+stringValue TagGPSDestLongitudeRef _ strBsValue    _  _       = directByte strBsValue
+stringValue TagGPSImgDirectionRef _ strBsValue     _  _       = directByte strBsValue
+stringValue TagInteroperabilityIndex  _ strBsValue _  _     = take 3 (unpackLazyBS strBsValue)
+stringValue _ len strBsValue getWord32 bsExif = runGet getStringValue bsExif
     where
         offset = fromIntegral (runGet getWord32 strBsValue)
         getStringValue = do

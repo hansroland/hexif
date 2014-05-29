@@ -12,24 +12,33 @@ import Data.List(intersperse)
 
 import Data.Char (chr, ord)
 
--- | pretty print the contents all exif fields 
+-- | pretty print the contents all exif fields
 prettyPrint :: DataBlock -> [ExifField]
-prettyPrint entries = map ppIFDData (flatten entries)
+prettyPrint entries = ppEntries entries ++ ppSubEntries entries
 
--- | flaten out the tree of the directories
--- Note: subDirs will always be printed at the end
-flatten :: DataBlock -> DataBlock
-flatten [] = []
-flatten (DataSub _ block : ds) = flatten ds ++ flatten block
-flatten (d : ds) = d : flatten ds
+ppEntries :: DataBlock -> [ExifField]
+ppEntries = map ppDataEntry (not . isSubBlock)
+
+ppSubEntries :: DataBlock -> [ExifField]
+ppSubEntries entries =
+    ppEntries $ concatMap subBlock (filter isSubBlock entries)
+
+subBlock :: DataEntry -> DataBlock
+subBlock (DataSub _ b) = b
+subBlock _ = []
+
+
+isSubBlock :: DataEntry -> Bool
+isSubBlock (DataSub _ _ ) = True
+isSubBlock _ = False
 
 -- | Pretty print a single exif field
-ppIFDData :: DataEntry -> ExifField
-ppIFDData (DataRat tag _ rats) = ExifField tag (ppRationalValues tag rats)
-ppIFDData (DataNum tag _ nVal) = ExifField tag (ppNumValue tag nVal)
-ppIFDData (DataStr tag _ strVal) = ExifField tag (ppStrValue tag strVal)
-ppIFDData (DataUdf tag _ len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
-ppIFDData (DataSub tag _ ) = error $ "Directory encountered " ++ show tag
+ppDataEntry :: DataEntry -> ExifField
+ppDataEntry (DataRat tag _ rats) = ExifField tag (ppRationalValues tag rats)
+ppDataEntry (DataNum tag _ nVal) = ExifField tag (ppNumValue tag nVal)
+ppDataEntry (DataStr tag _ strVal) = ExifField tag (ppStrValue tag strVal)
+ppDataEntry (DataUdf tag _ len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
+ppDataEntry (DataSub tag _ ) = error $ "Directory encountered " ++ show tag
 
 -- | Pretty printers for Undefined Values
 ppUndefinedValue :: ExifTag -> Int -> String -> String

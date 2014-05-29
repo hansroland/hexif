@@ -23,7 +23,7 @@ main = do
 processFile :: FilePath -> IO()
 processFile fn = do
     exif <- fromFile fn
-    mapM_ print (allTagsInclDebug exif)
+    mapM_ print (allFieldsInclDebug exif)
 
 -- | Pretty print a single tag
 singleTag :: FilePath -> ExifTag -> IO()

@@ -8,7 +8,7 @@ The first example shows how to print out all supported exif information of a JPE
 > processFile :: FilePath -> IO()
 > processFile fn = do
 >     exif <- fromFile fn
->     mapM_ print (allTags exif)
+>     mapM_ print (allFields exif)
 >
 > -- processFile "RS4748.JPG"
 
@@ -66,7 +66,7 @@ allFields exif = filter removeDebugs (allFieldsInclDebug exif)
 -- | Return the value of a single Exif tag.
 getTag :: Exif -> ExifTag -> Maybe String
 getTag exif tg =
-     if null fields 
+     if null fields
          then Nothing
          else Just $ exValue $ head fields
      where
@@ -77,15 +77,7 @@ getTag exif tg =
 -- | Return a list of all ExifFields including the debug tags.
 --   Do NOT use this function. It will be deleted later.
 allFieldsInclDebug :: Exif -> [ExifField]
-allFieldsInclDebug (Exif blocks _) = concat $ map prettyPrint blocks
-
-
-{-
--- | Return a list of our data entries
-allEntries :: Exif -> DataBlock
-allEntries exif = concat $ dirs exif
--}
-
+allFieldsInclDebug (Exif blocks _) = concatMap prettyPrint blocks
 
 -- | Return the exit data from a jpeg file.
 --   Use this function to initialize your exif value
@@ -95,16 +87,10 @@ fromFile fn = do
     let bsExif = extractExif jpeg
     return $ readExif bsExif
 
-{-
--- | Little getter function to extract the directories from an Exif value
-dirs :: Exif -> [IFDDir]
-dirs (Exif d _) = d
--}
-
 -- | Debugging function: Write the Exif file separatly to disk
 --   Do not use this function. It's mainly used for debugging
 dumpExif :: FilePath -> IO ()
-dumpExif fn = do 
+dumpExif fn = do
     jpeg <- readJpegFromFile fn
     let newName = replaceExtension fn ".exif"
     BL.writeFile newName (extractExif jpeg)
@@ -114,6 +100,4 @@ dumpExif fn = do
 fromExifFile :: FilePath -> IO Exif
 fromExifFile fn = do
    inp <- BL.readFile fn
-   return $ readExif inp 
-
-
+   return $ readExif inp
