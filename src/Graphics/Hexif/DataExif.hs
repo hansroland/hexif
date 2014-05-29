@@ -6,10 +6,9 @@
 module Graphics.Hexif.DataExif where
 
 import Data.Binary
-import qualified Data.ByteString.Lazy as BL
 
 -- | Datastructure with the interpreted Exif data.
-data Exif = Exif [IFDDir] GetWords
+data Exif = Exif [DataBlock] GetWords
 
 -- | Definiton of the resulting output
 data ExifField = ExifField ExifTag String   -- exifTag value
@@ -19,14 +18,15 @@ instance Show ExifField where
     show (ExifField exifTag value) = drop 3 (show exifTag) ++ " -> " ++ value
 
 -- | A data directory is a list of data entries
-type IFDDir = [IFDData]
+type DataBlock = [DataEntry]
 
 -- | Definition of a logical IFD Entry together with the data
-data IFDData = IFDRat  ExifTag Format [(Int, Int)]
-              | IFDNum ExifTag Format Int
-              | IFDStr ExifTag Format String
-              | IFDUdf ExifTag Format Int String
-              | IFDSub DirTag  Format IFDDir
+data DataEntry = DataRat ExifTag Format [(Int, Int)]
+             | DataNum ExifTag Format Int
+             | DataStr ExifTag Format String
+             | DataUdf ExifTag Format Int String
+             | DataSub DirTag  DataBlock
+     deriving (Eq, Show)
 
 -- | Definition of a DirTag
 data DirTag = IFDMain
@@ -38,18 +38,6 @@ data DirTag = IFDMain
 -- | Shortcut for the tuple to read 16 or 32 bits according to rhe Intel or 
 --   Motorola format.
 type GetWords = (Get Word16, Get Word32)
-
--- | A list of file entries builds a directory.
-type IFDFileDir = [IFDFileEntry]
-     
-
--- | Representation of a physical IFD Entry in the file
-data IFDFileEntry = IFDFileEntry
-    { tag :: Word16                     -- 2 Bytes
-    , format :: Word16       	        -- 2 Bytes
-    , components :: Int   		        -- 4 Bytes
-    , strValue :: BL.ByteString         -- 4 Bytes
-    } deriving (Eq, Show)
 
 -- | Definitons of the Formats
 data Format = Fmt00                      -- debug

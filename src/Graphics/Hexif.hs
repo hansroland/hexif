@@ -34,10 +34,10 @@ For more information about JPG and Exif, see
 module Graphics.Hexif 
   (ExifField(..)
   , ExifTag(..)
-  , allTags
+  , allFields
   , getTag
-  , allEntries
-  , allTagsInclDebug
+  -- , allEntries
+  , allFieldsInclDebug
   , fromFile
   , fromExifFile
   , dumpExif)
@@ -52,8 +52,8 @@ import qualified Data.ByteString.Lazy as BL
 import System.FilePath
 
 -- | Return a list of all ExifFields (but without debug tags).
-allTags :: Exif -> [ExifField]
-allTags exif = filter removeDebugs (allTagsInclDebug exif)
+allFields :: Exif -> [ExifField]
+allFields exif = filter removeDebugs (allFieldsInclDebug exif)
   where
     removeDebugs (ExifField tg _) = tg `notElem`
       [ TagSubDirIFDMain
@@ -66,22 +66,26 @@ allTags exif = filter removeDebugs (allTagsInclDebug exif)
 -- | Return the value of a single Exif tag.
 getTag :: Exif -> ExifTag -> Maybe String
 getTag exif tg =
-     if null tags 
+     if null fields 
          then Nothing
-         else Just $ exValue $ head tags
+         else Just $ exValue $ head fields
      where
-       tags = filter (\ef -> exTag ef == tg) (allTags exif)
+       fields = filter (\ef -> exTag ef == tg) (allFields exif)
        exTag (ExifField t _) = t
        exValue (ExifField _ v) = v
 
 -- | Return a list of all ExifFields including the debug tags.
 --   Do NOT use this function. It will be deleted later.
-allTagsInclDebug :: Exif -> [ExifField]
-allTagsInclDebug = prettyPrint . allEntries
+allFieldsInclDebug :: Exif -> [ExifField]
+allFieldsInclDebug (Exif blocks _) = concat $ map prettyPrint blocks
 
+
+{-
 -- | Return a list of our data entries
-allEntries :: Exif -> IFDDir
+allEntries :: Exif -> DataBlock
 allEntries exif = concat $ dirs exif
+-}
+
 
 -- | Return the exit data from a jpeg file.
 --   Use this function to initialize your exif value
@@ -91,9 +95,11 @@ fromFile fn = do
     let bsExif = extractExif jpeg
     return $ readExif bsExif
 
+{-
 -- | Little getter function to extract the directories from an Exif value
 dirs :: Exif -> [IFDDir]
 dirs (Exif d _) = d
+-}
 
 -- | Debugging function: Write the Exif file separatly to disk
 --   Do not use this function. It's mainly used for debugging
