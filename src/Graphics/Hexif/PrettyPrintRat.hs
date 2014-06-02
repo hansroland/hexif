@@ -95,18 +95,16 @@ ppGPSLongLatt rs = fmtLL fs
     fmtLL  _ = "verify data format"
 
 -- | Support function for ppGPSLongLat: Normalize degrees
+-- | Support function for ppGPSLongLat: Normalize degrees
 degNorm :: Float -> Float -> Float -> (Int, Int, Float)
-degNorm d m s = (i1, i2, f3)
-  where
-    (i1, f2) = carry d m
-    (i2, f3) = carry (m + f2) s
- 
--- | Support function for ppGPSLongLatt: Carry fractional parts to right
-carry :: Float -> Float -> (Int, Float)
-carry f1 f2 = (i1, r2)
-  where
-     i1 = floor f1
-     r2 = (f1 - fromIntegral i1) * 60 + f2
+degNorm dd mm ss = (d, m, s)
+   where
+     secs = dd * 3600 + mm * 60 + ss
+     q1 = secs / 3600
+     d = floor q1
+     r1 = (q1 - fromIntegral d) * 60
+     m = floor r1 
+     s = (r1 - (fromIntegral m)) * 60
 
 -- | Pretty print GPS time stamp
 ppGPSTimeStamp :: [Float] -> String
