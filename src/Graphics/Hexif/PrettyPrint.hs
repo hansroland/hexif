@@ -17,7 +17,7 @@ prettyPrint :: DataBlock -> [ExifField]
 prettyPrint entries = ppEntries entries ++ ppSubEntries entries
 
 ppEntries :: DataBlock -> [ExifField]
-ppEntries = map ppDataEntry (not . isSubBlock)
+ppEntries entries = map ppDataEntry (filter (not . isSubBlock) entries)
 
 ppSubEntries :: DataBlock -> [ExifField]
 ppSubEntries entries =
