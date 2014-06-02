@@ -89,7 +89,7 @@ ppGPSLongLatt :: [(Int,Int)] -> String
 ppGPSLongLatt rs = fmtLL fs
   where
     fs = map rat2Float rs
-    fmtLL (r1:r2:r3:[]) = printf "%d, %d, %.2f" d m s
+    fmtLL (r1:r2:r3:[]) = printf "%2d, %2d, %.2f" d m s
       where
         (d,m,s)  = degNorm r1 r2 r3
     fmtLL  _ = "verify data format"
