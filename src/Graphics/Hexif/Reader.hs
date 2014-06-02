@@ -1,5 +1,6 @@
 -- | This module contains the code to read (or parse) the exif file.
--- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
+-- This module is an internal module of Graphics.Hexif
+-- and should only be used in the hexif project!
 
 module Graphics.Hexif.Reader where
 
@@ -78,27 +79,27 @@ readIFDDir offset getWords@(getWord16, getWord32) bsExif = runGet getIFDDir bsEx
 -- | Get all the entries of an IFD
 getIFDDirEntries :: Int -> GetWords -> BL.ByteString -> Get IFDDir
 getIFDDirEntries count getWords@(getWord16, getWord32) bsExif =
-    if count == 0
-        then return []
-        else do
+   if count == 0
+       then return []
+       else do
            entry <- getIFDEntry
            entries <- getIFDDirEntries (count - 1) getWords bsExif
            return $ entry : entries
-    where
-      -- Get a single IFD entry.
-      getIFDEntry = do
-          tag <- getWord16
-          fmt <- getWord16
-          comps <- getWord32
-          strBsValue <- getLazyByteString 4
-          return $ buildEntry tag fmt comps strBsValue
-      -- Read subdirectories here 
-      buildEntry tg fm cmps strBsVal = 
-          case toDirTag tg of
-              Just dirTag  -> IFDSubDir dirTag (concat $ readIFDDirs dirTag offset getWords bsExif)
-              Nothing  -> IFDEntry tg fm (fromIntegral cmps) strBsVal
-            where
-               offset = fromIntegral (runGet getWord32 strBsVal)
+   where
+     -- Get a single IFD entry.
+     getIFDEntry = do
+         tag <- getWord16
+         fmt <- getWord16
+         comps <- getWord32
+         strBsValue <- getLazyByteString 4
+         return $ buildEntry tag fmt comps strBsValue
+     -- Read subdirectories here
+     buildEntry tg fm cmps strBsVal =
+         case toDirTag tg of
+             Just dirTag  -> IFDSubDir dirTag (concat $ readIFDDirs dirTag offset getWords bsExif)
+             Nothing  -> IFDEntry tg fm (fromIntegral cmps) strBsVal
+           where
+             offset = fromIntegral (runGet getWord32 strBsVal)
 
 -- | Convert IFD Entries to DataEntries
 convertDir :: DirTag -> BL.ByteString -> GetWords -> IFDDir -> DataBlock
