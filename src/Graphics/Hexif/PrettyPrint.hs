@@ -17,11 +17,11 @@ prettyPrint :: DataBlock -> [ExifField]
 prettyPrint entries = ppEntries entries ++ ppSubEntries entries
   where
     ppEntries :: DataBlock -> [ExifField]
-    ppEntries entries = map ppDataEntry (filter (not . isSubBlock) entries)
+    ppEntries flds = map ppDataEntry (filter (not . isSubBlock) flds)
     ppSubEntries :: DataBlock -> [ExifField]
     ppSubEntries [] = []
-    ppSubEntries entries =
-        prettyPrint $ concatMap subBlock (filter isSubBlock entries)
+    ppSubEntries es =
+        prettyPrint $ concatMap subBlock (filter isSubBlock es)
     subBlock :: DataEntry -> DataBlock
     subBlock (DataSub _ b) = b
     subBlock _ = []
