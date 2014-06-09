@@ -39,9 +39,9 @@ ppRationalValue t r
 rat2Float :: (Int,Int) -> Float
 rat2Float (n,d) = (fromIntegral n::Float) / (fromIntegral d::Float)
 
+-- | Helper function: Convert a rational to a double.
 rat2Double :: (Int,Int) -> Double
 rat2Double (n,d) = (fromIntegral n::Double) / (fromIntegral d::Double)
-
 
 -- | Helper function: Format a rational number with a slash.
 fmtRatWithSlash :: (Int, Int) -> String
