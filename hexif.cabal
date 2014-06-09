@@ -2,15 +2,15 @@
 --  see http://haskell.org/cabal/users-guide/
 
 name:                hexif
-version:             0.1.0.1
+version:             0.2.0.0
 synopsis:            Reading Exif data form a JPEG file with Haskell
--- description:         
+description:         Read and pretty print the Exif data from a JPEG file
 homepage:            http://www.github.com/hansroland/hexif
 license:             BSD3
 license-file:        LICENSE
 author:              Roland Senn
 maintainer:          rsx@bluewin.ch
--- copyright:           
+copyright:           Roland Senn, 2014
 category:            Graphics
 build-type:          Simple
 -- extra-source-files:  
