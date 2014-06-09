@@ -15,22 +15,19 @@ import Data.Char (chr, ord)
 -- | pretty print the contents all exif fields
 prettyPrint :: DataBlock -> [ExifField]
 prettyPrint entries = ppEntries entries ++ ppSubEntries entries
-
-ppEntries :: DataBlock -> [ExifField]
-ppEntries entries = map ppDataEntry (filter (not . isSubBlock) entries)
-
-ppSubEntries :: DataBlock -> [ExifField]
-ppSubEntries entries =
-    ppEntries $ concatMap subBlock (filter isSubBlock entries)
-
-subBlock :: DataEntry -> DataBlock
-subBlock (DataSub _ b) = b
-subBlock _ = []
-
-
-isSubBlock :: DataEntry -> Bool
-isSubBlock (DataSub _ _ ) = True
-isSubBlock _ = False
+  where
+    ppEntries :: DataBlock -> [ExifField]
+    ppEntries entries = map ppDataEntry (filter (not . isSubBlock) entries)
+    ppSubEntries :: DataBlock -> [ExifField]
+    ppSubEntries [] = []
+    ppSubEntries entries =
+        prettyPrint $ concatMap subBlock (filter isSubBlock entries)
+    subBlock :: DataEntry -> DataBlock
+    subBlock (DataSub _ b) = b
+    subBlock _ = []
+    isSubBlock :: DataEntry -> Bool
+    isSubBlock (DataSub _ _ ) = True
+    isSubBlock _ = False
 
 -- | Pretty print a single exif field
 ppDataEntry :: DataEntry -> ExifField

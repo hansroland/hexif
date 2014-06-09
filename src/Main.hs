@@ -30,5 +30,3 @@ singleTag :: FilePath -> ExifTag -> IO()
 singleTag fn tag = do
     exif <- fromFile fn
     print $ getTag exif tag
-
-
