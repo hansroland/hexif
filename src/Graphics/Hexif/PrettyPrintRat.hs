@@ -107,8 +107,8 @@ degNorm dd mm ss = (d, m, s)
      q1 = secs / 3600
      d = floor q1
      r1 = (q1 - fromIntegral d) * 60
-     m = floor r1 
-     s = double2Float (r1 - (fromIntegral m)) * 60
+     m = floor r1
+     s = double2Float (r1 - fromIntegral m) * 60
 
 -- | Pretty print GPS time stamp
 ppGPSTimeStamp :: [Double] -> String
