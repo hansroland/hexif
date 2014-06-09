@@ -8,26 +8,26 @@ import Graphics.Hexif.DataExif
 import Graphics.Hexif.PrettyPrintInt
 import Graphics.Hexif.PrettyPrintRat
 import Text.Printf (printf)
-import Data.List(intersperse)
+import Data.List(intersperse, partition)
 
 import Data.Char (chr, ord)
 
--- | pretty print the contents all exif fields
+-- | pretty print the contents all exif fields.
+--  To get the same sequence as exif library we first process all
+--  simple entries, and afterwards the subdirecories
 prettyPrint :: DataBlock -> [ExifField]
-prettyPrint entries = ppEntries entries ++ ppSubEntries entries
+prettyPrint entries = map ppDataEntry ee ++ ppSubEntries ss
   where
-    ppEntries :: DataBlock -> [ExifField]
-    ppEntries flds = map ppDataEntry (filter (not . isSubBlock) flds)
+    (ee, ss) = partition isSimpleEntry entries
     ppSubEntries :: DataBlock -> [ExifField]
     ppSubEntries [] = []
-    ppSubEntries es =
-        prettyPrint $ concatMap subBlock (filter isSubBlock es)
+    ppSubEntries es = prettyPrint $ concatMap subBlock es
     subBlock :: DataEntry -> DataBlock
     subBlock (DataSub _ b) = b
     subBlock _ = []
-    isSubBlock :: DataEntry -> Bool
-    isSubBlock (DataSub _ _ ) = True
-    isSubBlock _ = False
+    isSimpleEntry :: DataEntry -> Bool
+    isSimpleEntry (DataSub _ _ ) = False
+    isSimpleEntry _ = True
 
 -- | Pretty print a single exif field
 ppDataEntry :: DataEntry -> ExifField
@@ -90,14 +90,14 @@ ppComponentsConfiguration conf = unwords $ map ppComps conf
 ppFileSource :: String -> String
 ppFileSource value = 
       if head value == chr 3 
-      then "DSC" 
+      then "DSC"
       else "(unknown)"
 
--- |Pretty printer for the Scene type
+-- | Pretty printer for the Scene type
 ppSceneType :: String -> String
-ppSceneType value = 
-      if head value == chr 1 
-      then "Directly photographed" 
+ppSceneType value =
+      if head value == chr 1
+      then "Directly photographed"
       else "(unknown)"
    
 -- | Pretty printer for the tag GPSAltitudeRef
