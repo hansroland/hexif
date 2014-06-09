@@ -246,6 +246,7 @@ toStdTag t = case t of
    0x829d -> TagFNumber
    0x8822 -> TagExposureProgram
    0x8827 -> TagISOSpeedRatings
+   0x8830 -> TagSensitivityType
    0x9000 -> TagExifVersion
    0x9003 -> TagDateTimeOriginal
    0x9004 -> TagDateTimeDigitized

@@ -90,6 +90,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagFNumber
              | TagExposureProgram
              | TagISOSpeedRatings
+             | TagSensitivityType
              | TagExifVersion
              | TagDateTimeOriginal
              | TagDateTimeDigitized
