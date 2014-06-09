@@ -8,7 +8,7 @@ module Graphics.Hexif.DataExif where
 import Data.Binary
 
 -- | Datastructure with the interpreted Exif data.
-data Exif = Exif [DataBlock] GetWords
+data Exif = Exif DataBlock GetWords
 
 -- | Definiton of the resulting output
 data ExifField = ExifField ExifTag String   -- exifTag value

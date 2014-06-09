@@ -31,8 +31,8 @@ readExif :: BL.ByteString -> Exif
 readExif bsExif6 = Exif mainDirs getWords 
     where 
       bsExif = BL.drop 6 bsExif6
-      mainDirs = map (convertDir IFDMain bsExif getWords) ifdDirs
-      ifdDirs = readIFDDirs IFDMain offset getWords bsExif
+      mainDirs = convertDir IFDMain bsExif getWords ifdDirs
+      ifdDirs = concat $ readIFDDirs IFDMain offset getWords bsExif
       (getWords, offset) = readHeader bsExif
 
 -- | Read the header data from a ByteString representing an EXIF file 

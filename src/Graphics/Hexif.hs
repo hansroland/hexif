@@ -77,7 +77,7 @@ getTag exif tg =
 -- | Return a list of all ExifFields including the debug tags.
 --   Do NOT use this function. It will be deleted later.
 allFieldsInclDebug :: Exif -> [ExifField]
-allFieldsInclDebug (Exif blocks _) = concatMap prettyPrint blocks
+allFieldsInclDebug (Exif block _) = prettyPrint block
 
 -- | Return the exit data from a jpeg file.
 --   Use this function to initialize your exif value
