@@ -5,6 +5,7 @@ module Graphics.Hexif.PrettyPrintRat where
 
 import Graphics.Hexif.DataExif
 import Text.Printf (printf)
+import GHC.Float
 
 -- | pretty printer for exif tags with multiple rational values.
 ppRationalValues :: ExifTag -> [(Int,Int)] -> String
@@ -14,7 +15,7 @@ ppRationalValues TagGPSLatitude rs      = ppGPSLongLatt rs
 ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
-ppRationalValues TagGPSTimeStamp rs     = ppGPSTimeStamp $ map rat2Float rs
+ppRationalValues TagGPSTimeStamp rs     = ppGPSTimeStamp $ map rat2Double rs
 ppRationalValues _ rs     = concatMap fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
@@ -36,7 +37,10 @@ ppRationalValue t r
 
 -- | Helper function: Convert a rational to a float.
 rat2Float :: (Int,Int) -> Float
-rat2Float (n,d) = (fromIntegral n::Float) / (fromIntegral d:: Float)
+rat2Float (n,d) = (fromIntegral n::Float) / (fromIntegral d::Float)
+
+rat2Double :: (Int,Int) -> Double
+rat2Double (n,d) = (fromIntegral n::Double) / (fromIntegral d::Double)
 
 
 -- | Helper function: Format a rational number with a slash.
@@ -88,15 +92,15 @@ ppBrightnessValue f = printf "%.2f EV (%.2f cd/m^2)" f pf
 ppGPSLongLatt :: [(Int,Int)] -> String
 ppGPSLongLatt rs = fmtLL fs
   where
-    fs = map rat2Float rs
-    fmtLL (r1:r2:r3:[]) = printf "%2d, %2d, %.2f" d m s
+    fs = map rat2Double rs
+    fmtLL (r1:r2:r3:[]) = printf "%2d, %2d, %.4f" d m s
       where
         (d,m,s)  = degNorm r1 r2 r3
     fmtLL  _ = "verify data format"
 
 -- | Support function for ppGPSLongLat: Normalize degrees
 -- | Support function for ppGPSLongLat: Normalize degrees
-degNorm :: Float -> Float -> Float -> (Int, Int, Float)
+degNorm :: Double -> Double -> Double -> (Int, Int, Float)
 degNorm dd mm ss = (d, m, s)
    where
      secs = dd * 3600 + mm * 60 + ss
@@ -104,9 +108,9 @@ degNorm dd mm ss = (d, m, s)
      d = floor q1
      r1 = (q1 - fromIntegral d) * 60
      m = floor r1 
-     s = (r1 - (fromIntegral m)) * 60
+     s = double2Float (r1 - (fromIntegral m)) * 60
 
 -- | Pretty print GPS time stamp
-ppGPSTimeStamp :: [Float] -> String
-ppGPSTimeStamp [h, m, s] = printf "%02.0f:%02.0f:%02.2f" h m s
+ppGPSTimeStamp :: [Double] -> String
+ppGPSTimeStamp [h, m, s] = printf "%02.0f:%02.0f:%05.2f" h m s
 ppGPSTimeStamp _         = "Invalid date format"
