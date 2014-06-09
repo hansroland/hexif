@@ -8,7 +8,7 @@ module Graphics.Hexif.DataExif where
 import Data.Binary
 
 -- | Datastructure with the interpreted Exif data.
-data Exif = Exif DataBlock GetWords
+data Exif = Exif DataBlock Encoding
 
 -- | Definiton of the resulting output
 data ExifField = ExifField ExifTag String   -- exifTag value
@@ -28,6 +28,11 @@ data DataEntry = DataRat ExifTag Format [(Int, Int)]
              | DataSub DirTag  DataBlock
      deriving (Eq, Show)
 
+-- | The encoding of the binary data.
+-- Motorola is big endian, Intel is low endian
+data Encoding = Intel
+    | Motorola
+
 -- | Definition of a DirTag
 data DirTag = IFDMain
          | IFDExif
@@ -35,9 +40,6 @@ data DirTag = IFDMain
          | IFDInterop
      deriving (Eq, Show)
 
--- | Shortcut for the tuple to read 16 or 32 bits according to rhe Intel or 
---   Motorola format.
-type GetWords = (Get Word16, Get Word32)
 
 -- | Definitons of the Formats
 data Format = Fmt00                      -- debug
@@ -120,6 +122,7 @@ data ExifTag = TagInteroperabilityIndex
              | TagSensingMethod
              | TagFileSource
              | TagSceneType
+             | TagCFAPattern
              | TagCustomRendered
              | TagExposureMode
              | TagWhiteBalance
