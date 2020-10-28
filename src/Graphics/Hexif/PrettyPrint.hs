@@ -2,40 +2,39 @@
 -- This module is an internal module of Graphics.Hexif and should be used in the hexif project!
 
 {-# LANGUAGE ViewPatterns, ScopedTypeVariables #-}
-module Graphics.Hexif.PrettyPrint (prettyPrint) where
+module Graphics.Hexif.PrettyPrint
+      ( prettyPrint
+      , ppIfdEntry
+      ) where
 
-import Graphics.Hexif.DataExif
+import Graphics.Hexif.Types
 import Graphics.Hexif.PrettyPrintInt
 import Graphics.Hexif.PrettyPrintRat
-import Text.Printf (printf)
-import Data.List(intersperse, partition)
 
+import Text.Printf (printf)
+import Data.List(intersperse)
 import Data.Char (chr, ord)
 
--- | pretty print the contents all exif fields.
---  To get the same sequence as exif library we first process all
---  simple entries, and afterwards the subdirecories
-prettyPrint :: DataBlock -> [ExifField]
-prettyPrint entries = map ppDataEntry ee ++ ppSubEntries ss
+import qualified Data.Map as Map
+
+-- | Pretty print all entries of the whole Ifd
+prettyPrint :: Exif Ifd -> [PrettyEntry]
+prettyPrint (Exif _ ifd) = map ppIfdEntry entries
   where
-    (ee, ss) = partition isSimpleEntry entries
-    ppSubEntries :: DataBlock -> [ExifField]
-    ppSubEntries [] = []
-    ppSubEntries es = prettyPrint $ concatMap subBlock es
-    subBlock :: DataEntry -> DataBlock
-    subBlock (DataSub _ b) = b
-    subBlock _ = []
-    isSimpleEntry :: DataEntry -> Bool
-    isSimpleEntry (DataSub _ _ ) = False
-    isSimpleEntry _ = True
+      entries = concatMap Map.elems $ Map.elems ifd
 
 -- | Pretty print a single exif field
-ppDataEntry :: DataEntry -> ExifField
-ppDataEntry (DataRat tag _ rats) = ExifField tag (ppRationalValues tag rats)
-ppDataEntry (DataNum tag _ nVal) = ExifField tag (ppNumValue tag nVal)
-ppDataEntry (DataStr tag _ strVal) = ExifField tag (ppStrValue tag strVal)
-ppDataEntry (DataUdf tag _ len strVal) = ExifField tag (ppUndefinedValue tag len strVal)
-ppDataEntry (DataSub tag _ ) = error $ "Directory encountered " ++ show tag
+ppIfdEntry :: IfdEntry -> PrettyEntry
+ppIfdEntry (IfdEntry tag val) =
+    PrettyEntry {
+      prettyTag = drop 3 (show tag) , prettyValue = ppIfdValue tag val}
+
+-- PrettyPrint an ExifValue field
+ppIfdValue :: ExifTag -> ExifValue -> String
+ppIfdValue tag (ValueRat rats)       = ppRationalValues tag rats
+ppIfdValue tag (ValueInt nVal)       = ppIntValue tag nVal
+ppIfdValue tag (ValueStr strVal)     = ppStrValue tag strVal
+ppIfdValue tag (ValueUdf len strVal) = ppUndefinedValue tag len strVal
 
 -- | Pretty printers for Undefined Values
 ppUndefinedValue :: ExifTag -> Int -> String -> String
@@ -53,6 +52,10 @@ ppStrValue TagXPAuthor strVal = removeNull strVal
 ppStrValue TagXPTitle strVal = removeNull  strVal
 ppStrValue TagGPSVersionID strVal = intersperse '.' strVal
 ppStrValue TagGPSAltitudeRef strVal= ppTagGPSAltitudeRef strVal
+ppStrValue TagGPSStatus strVal = ppTagGPSStatus strVal
+ppStrValue TagGPSSpeedRef strVal = ppTagGPSSpeedRef strVal
+ppStrValue TagGPSTrackRef strVal = ppTagGPSTrackRef strVal
+ppStrValue TagGPSDestBearingRef strVal = ppTagGPSTrackRef strVal
 ppStrValue _ strVal = rtrimX00 strVal
 
 -- | Remove trailing hex zeros 0x00 from strings
@@ -62,7 +65,7 @@ rtrimX00 = reverse . dropWhile (\c -> ord c == 0) . reverse
 -- | Little support function for ppStrValue
 removeNull :: String -> String
 removeNull = filter (\c -> ord c /= 00)
-     
+
 -- | Pretty printer for the Exif version
 ppExifVersion :: String -> String
 ppExifVersion value = "Exif Version " ++ show num
@@ -88,8 +91,8 @@ ppComponentsConfiguration conf = unwords $ map ppComps conf
 
 -- | Pretty printer for the file source
 ppFileSource :: String -> String
-ppFileSource value = 
-      if head value == chr 3 
+ppFileSource value =
+      if head value == chr 3
       then "DSC"
       else "(unknown)"
 
@@ -99,7 +102,7 @@ ppSceneType value =
       if head value == chr 1
       then "Directly photographed"
       else "(unknown)"
-   
+
 -- | Pretty printer for the tag GPSAltitudeRef
 ppTagGPSAltitudeRef :: String -> String
 ppTagGPSAltitudeRef s = case s of
@@ -107,3 +110,19 @@ ppTagGPSAltitudeRef s = case s of
     "1" -> "Below sea level"
     _ -> "unknown " ++ s
 
+ppTagGPSStatus :: String -> String
+ppTagGPSStatus "A" = "Measurement Active"
+ppTagGPSStatus "V" = "Measurement Void"
+ppTagGPSStatus s   = "unknown " ++ s
+
+ppTagGPSSpeedRef :: String -> String
+ppTagGPSSpeedRef "K" = "km/h"
+ppTagGPSSpeedRef "M" = "mph"
+ppTagGPSSpeedRef "N" = "knots"
+ppTagGPSSpeedRef s  = "unknown " ++ s
+
+-- also used for ppTagGPSDestBearingRef
+ppTagGPSTrackRef :: String -> String
+ppTagGPSTrackRef "M" = "Magnetic North"
+ppTagGPSTrackRef "T" = "True North"
+ppTagGPSTrackRef s = "unknown " ++ s

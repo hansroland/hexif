@@ -1,11 +1,14 @@
 -- | This module pretty prints all the exif fields with rational values.
--- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
 
-module Graphics.Hexif.PrettyPrintRat where
+module Graphics.Hexif.PrettyPrintRat
+  ( ppRationalValues
+  ) where
 
-import Graphics.Hexif.DataExif
+import Graphics.Hexif.Types
+
 import Text.Printf (printf)
 import GHC.Float
+
 
 -- | pretty printer for exif tags with multiple rational values.
 ppRationalValues :: ExifTag -> [(Int,Int)] -> String
@@ -16,6 +19,9 @@ ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
 ppRationalValues TagGPSTimeStamp rs     = ppGPSTimeStamp $ map rat2Double rs
+ppRationalValues TagGPS0a rs            = "GPS Tag 0a"
+ppRationalValues TagGPS0b rs            = "GPS Tag 0b"
+ppRationalValues TagGPS0f rs            = "GPS Tag 0f"
 ppRationalValues _ rs     = concatMap fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
@@ -51,13 +57,13 @@ fmtRatWithSlash (num,denum) =
 
 -- | Format a rational number.
 fmtRat :: (Int, Int) -> String
-fmtRat r@(num, denum) = 
+fmtRat r@(num, denum) =
      if mod num denum == 0 then fmtRatInt r else fmtRatFloat r
 
 -- | Format a rational number as an integer
 fmtRatInt :: (Int, Int) -> String
 fmtRatInt (num, denum) = show $ div num denum
- 
+
 -- | Format a rational number as a float.
 fmtRatFloat :: (Int, Int) -> String
 fmtRatFloat = show . rat2Float
@@ -98,7 +104,6 @@ ppGPSLongLatt rs = fmtLL fs
         (d,m,s)  = degNorm r1 r2 r3
     fmtLL  _ = "verify data format"
 
--- | Support function for ppGPSLongLat: Normalize degrees
 -- | Support function for ppGPSLongLat: Normalize degrees
 degNorm :: Double -> Double -> Double -> (Int, Int, Float)
 degNorm dd mm ss = (d, m, s)

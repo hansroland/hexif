@@ -1,13 +1,14 @@
 -- | This module pretty prints all the exif values with an integer code.
--- This module is an internal module of Graphics.Hexif and should only be used in the hexif project!
-module Graphics.Hexif.PrettyPrintInt where
+module Graphics.Hexif.PrettyPrintInt
+    (
+        ppIntValue
+    ) where
 
-import Graphics.Hexif.DataExif
-
+import Graphics.Hexif.Types
 
 -- | PrettyPrint functions for all Integer values.
-ppNumValue :: ExifTag -> Int -> String
-ppNumValue tg n = case tg of
+ppIntValue :: ExifTag -> Int -> String
+ppIntValue tg n = case tg of
     TagCompression       -> ppCompression n
     TagResolutionUnit    -> ppResolutionUnit n
     TagOrientation       -> ppOrientation n
@@ -43,7 +44,7 @@ ppResolutionUnit n = case n of
 ppOrientation :: Int -> String
 ppOrientation n = case n of
     1 -> "Top-left"
-    2 -> "Top-right" 
+    2 -> "Top-right"
     3 -> "Bottom-right"
     4 -> "Bottom-left"
     5 -> "Left-top"
@@ -157,7 +158,7 @@ ppTagColorSpace :: Int -> String
 ppTagColorSpace n = case n of
     1     -> "sRGB"
     65535 -> "Uncalibrated"
-    _     -> undef n 
+    _     -> undef n
 
 -- | Pretty printer for the tag CustomRendered.
 ppCustomRendered :: Int -> String
@@ -176,7 +177,7 @@ ppTagExposureMode n = case n of
 
 -- | Pretty printer of tag WhiteBalance.
 ppTagWhiteBalance :: Int -> String
-ppTagWhiteBalance n = case n of 
+ppTagWhiteBalance n = case n of
     0 -> "Auto white balance"
     1 -> "Manual white balance"
     _ -> undef n

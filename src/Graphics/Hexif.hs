@@ -1,107 +1,67 @@
-{-|
-     Read and interpret the exif file of a JPEG image with pure Haskell code.
+module Graphics.Hexif
+    ( Hexif()
+    , PrettyEntry(..)
+    , ExifTag(..)
+    , fromFile
+    , allFields
+    , getTag
+    )
 
-     This hexif library has similar functionality as the exif package (<http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html>), which calls the C-library libexif(<http://libexif.sourceforge.net/>).
+where
 
-
-The first example shows how to print out all supported exif information of a JPEG image.
-
-> processFile :: FilePath -> IO()
-> processFile fn = do
->     exif <- fromFile fn
->     mapM_ print (allFields exif)
-
-Example:
- 
-> processFile "RS4748.JPG"
-
-The next example prints out the value of a single tag:
-
-> singleTag :: FilePath -> ExifTag -> IO()
-> singleTag fn tag = do
->     exif <- fromFile fn
->     print $ getTag exif tag
-
-Example:
-
-> singleTag "RS4847.JPG" TagComponentsConfiguration
-
-
-For more information about JPG and Exif, see
-
-     *  <http://www.kodak.com/global/plugins/acrobat/en/service/digCam/exifStandard2.pdf>
-
-     *  <http://www.media.mit.edu/pia/Research/deepview/exif.html>
-
-     *  <http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html>
--}
-
-module Graphics.Hexif 
-  (ExifField(..)
-  , ExifTag(..)
-  , allFields
-  , getTag
-  , allFieldsInclDebug
-  , fromFile
-  , fromExifFile
-  , dumpExif)
-  where
-
-import Graphics.Hexif.DataExif
 import Graphics.Hexif.Jpeg
-import Graphics.Hexif.Reader
+import Graphics.Hexif.Types
+import Graphics.Hexif.Parser
+import Graphics.Hexif.Convert
 import Graphics.Hexif.PrettyPrint
+import Graphics.Hexif.Utils
 
 import qualified Data.ByteString.Lazy as BL
-import System.FilePath
+import qualified Data.Map as Map
+import Data.List (find)
 
--- | Return a list of all ExifFields (but without debug tags).
-allFields :: Exif -> [ExifField]
-allFields exif = filter removeDebugs (allFieldsInclDebug exif)
-  where
-    removeDebugs (ExifField tg _) = tg `notElem`
-      [ TagSubDirIFDMain
-      , TagSubDirIFDExif
-      , TagSubDirIFDGPS
-      , TagSubDirIFDInterop
-      , TagOffsetSchemata
-      ]
+type Hexif = Exif Ifd
+
+-- Return a list of allexif fields found in the file.
+allFields :: Hexif -> [PrettyEntry]
+allFields = prettyPrint
 
 -- | Return the value of a single Exif tag.
-getTag :: Exif -> ExifTag -> Maybe String
-getTag exif tg =
-     if null fields
-         then Nothing
-         else Just $ exValue $ head fields
+getTag :: Hexif -> ExifTag -> Maybe String
+getTag exif tag = (prettyValue . ppIfdEntry) <$> mbEntry
      where
-       fields = filter (\ef -> exTag ef == tg) (allFields exif)
-       exTag (ExifField t _) = t
-       exValue (ExifField _ v) = v
+       mbEntry = find (\e -> entryTag e == tag) ifdEntries
+       ifdEntries = concatMap Map.elems $ Map.elems $ ifdMap exif
 
--- | Return a list of all ExifFields including the debug tags.
---   Do NOT use this function. It will be deleted later.
-allFieldsInclDebug :: Exif -> [ExifField]
-allFieldsInclDebug (Exif block _) = prettyPrint block
+fromFile :: FilePath -> IO (Exif Ifd)
+fromFile filepath = do
+    etJpeg <- readJpegFromFile filepath
+    case etJpeg of
+      Left str -> do
+        putStrLn str
+        return $ Exif Intel Map.empty
+      Right jpeg -> do
+        let exifbs = extractExifOld jpeg
+        let rawExif = parseRawExif exifbs
+        let exif = convert exifbs rawExif
+        return exif
+        -- print exif
+        -- print $ prettyPrint exif
 
--- | Return the exit data from a jpeg file.
---   Use this function to initialize your exif value
-fromFile :: FilePath -> IO Exif
-fromFile fn = do
-    jpeg <- readJpegFromFile fn
-    let bsExif = extractExif jpeg
-    return $ readExif bsExif
 
--- | Debugging function: Write the Exif file separatly to disk
---   Do not use this function. It's mainly used for debugging
-dumpExif :: FilePath -> IO ()
-dumpExif fn = do
-    jpeg <- readJpegFromFile fn
-    let newName = replaceExtension fn ".exif"
-    BL.writeFile newName (extractExif jpeg)
+-- | Extract the Exif segment from a JPEG value
+-- TODO: Check for Exif constant at the beginning
+extractExif :: Jpeg -> Either String BL.ByteString
+extractExif jpeg = existsExif exifSegs
+  where
+    exifSegs = filter (\seg -> segMarker seg == 0xFFE1) (segments jpeg)
+    existsExif [] = Left "No JPEG segments found"
+    existsExif segs = Right $ BL.drop 6 $ segData $ head segs
 
--- | Helper function to read exif data from a dumped exif file
---   Do not use this function. It's mainly used for debugging
-fromExifFile :: FilePath -> IO Exif
-fromExifFile fn = do
-   inp <- BL.readFile fn
-   return $ readExif inp
+-- | Extract the Exif segment from a JPEG value
+-- TODO: Check for Exif constant at the beginning
+extractExifOld :: Jpeg -> BL.ByteString
+extractExifOld jpeg = existsExif
+  where
+    segs = filter (\seg -> segMarker seg == 0xFFE1) (segments jpeg)
+    existsExif = BL.drop 6 $ segData $ head segs
