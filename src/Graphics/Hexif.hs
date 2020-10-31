@@ -5,6 +5,7 @@ module Graphics.Hexif
     , fromFile
     , allFields
     , getTag
+    , findTag
     )
 
 where
@@ -29,9 +30,14 @@ allFields = prettyPrint
 -- | Return the value of a single Exif tag.
 getTag :: Hexif -> ExifTag -> Maybe String
 getTag exif tag = (prettyValue . ppIfdEntry) <$> mbEntry
-     where
-       mbEntry = find (\e -> entryTag e == tag) ifdEntries
-       ifdEntries = concatMap Map.elems $ Map.elems $ ifdMap exif
+  where
+    mbEntry = findTag exif tag
+
+-- | Retun the IfdEntry of a single Exif tag
+findTag :: Hexif -> ExifTag -> Maybe IfdEntry
+findTag exif tag = find (\e -> entryTag e == tag) ifdEntries
+   where
+    ifdEntries = concatMap Map.elems $ Map.elems $ ifdMap exif
 
 fromFile :: FilePath -> IO (Exif Ifd)
 fromFile filepath = do

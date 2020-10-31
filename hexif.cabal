@@ -18,6 +18,7 @@ extra-source-files:  CHANGELOG.md
 
 library
   exposed-modules:     Graphics.Hexif
+                       Graphics.Hexif.Api
 
   other-modules:       Graphics.Hexif.Jpeg
                       , Graphics.Hexif.Types
@@ -34,6 +35,7 @@ library
                        , binary
                        , bytestring
                        , hex
+                       , time
   hs-source-dirs:      src
   default-language:    Haskell2010
 

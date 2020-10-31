@@ -1,6 +1,7 @@
 module Main where
 
 import Graphics.Hexif
+import Graphics.Hexif.Api
 import System.Environment ( getArgs )
 
 main :: IO ()
@@ -14,4 +15,5 @@ main = do
         putStrLn ""
         putStrLn "selected Fields"
         print $ getTag exif TagGPSLatitude
+        print $ getDateTime exif
         putStrLn "End of Processing"

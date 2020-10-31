@@ -10,14 +10,11 @@ import qualified Data.ByteString.Lazy as BL
 
 import Data.Hex
 
---
 -- | The encoding of the binary data.
 -- Motorola is big endian, Intel is low endian
 data Encoding = Intel
     | Motorola
   deriving (Show)
-
-
 
 -- | Little support function to read 16 bit integers
 getWord16 :: Encoding -> Get Word16
@@ -41,3 +38,10 @@ runGetEither :: Get a -> BL.ByteString -> Either String a
 runGetEither get bs = case runGetOrFail get bs of
     Left (_,_,strError) -> Left strError
     Right (_,_,x)       -> Right x
+
+-- Return the first parameter, if it's Nothing, return the second parameter
+-- This something similar to an OR for Maybe values
+ifNothing :: Maybe a -> Maybe a -> Maybe a
+ifNothing mbX mbY = case mbX of
+  Nothing  -> mbY
+  _        -> mbX

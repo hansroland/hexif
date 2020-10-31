@@ -62,6 +62,10 @@ data ExifValue =
     | ValueRat [(Int, Int)]
   deriving (Show)
 
+exifValueString :: ExifValue -> Maybe String
+exifValueString (ValueStr str) = Just str
+exifValueString _              = Nothing
+
 -- TODO: Add the 0x0000 tag!!
 -- | IFD Tags
 tagExifIfd :: Word16

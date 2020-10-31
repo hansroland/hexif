@@ -1,6 +1,6 @@
 ### Read the EXIF File of a JPEG image with Haskell Code only.
 
-This *hexif* library has similar functionality as the [Hackage *exif* package](http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html). *Hexif* uses only pure Haskell code and no operating system library. 
+This *hexif* library has similar functionality as the [Hackage *exif* package](http://hackage.haskell.org/package/exif-3000.0.0/docs/Graphics-Exif.html). *Hexif* uses only pure Haskell code and no operating system library.
 
 The first example shows how to print out all supported exif information of a JPEG image.
 
@@ -18,12 +18,12 @@ The next example prints out the value of a single tag:
         print $ getTag exif tag
     -- Example: singleTag "RS4847.JPG" TagComponentsConfiguration
 
-The supported exit tags are listed in the module Graphics.Hexif.DataExif. 
+The supported exit tags are listed in the module Graphics.Hexif.DataExif.
 
 Sample output of first example:
 
     ImageDescription -> SONY DSC
-    Make -> SONY 
+    Make -> SONY
     Model -> DSLR-A200
     XResolution -> 72
     YResolution -> 72
@@ -84,4 +84,23 @@ Sample output of first example:
     InteroperabilityVersion -> 0100
     RelatedImageWidth -> 3872
     RelatedImageLength -> 2592
+
+
+### Similar libraries
+
+The [hsexif](http://hackage.haskell.org/package/hsexif) is a similar library. If in doubt, use *hsexif*!
+
+#### Pros of hexif
+
+* *hexif* can show you all tags in an JPEG file including tags unknown to the program. *hsexif* has also a function called *allExifTags*, however, this prints just a predefined list of tags.
+
+#### Pros of hsexif
+
+* *hsexif* is on Hackage
+* *hsexif* has more typed functions to access the Exif values
+* *hsexif* supports more files created by different camera brands
+
+
+
+
 
