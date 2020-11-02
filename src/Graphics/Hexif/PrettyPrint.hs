@@ -1,5 +1,4 @@
 -- | Print out nicely the contents the data of IFDEntries.
--- This module is an internal module of Graphics.Hexif and should be used in the hexif project!
 
 {-# LANGUAGE ViewPatterns, ScopedTypeVariables #-}
 module Graphics.Hexif.PrettyPrint
@@ -14,20 +13,35 @@ import Graphics.Hexif.PrettyPrintRat
 import Text.Printf (printf)
 import Data.List(intersperse)
 import Data.Char (chr, ord)
-
+import Data.Binary
+import Data.Maybe
 import qualified Data.Map as Map
 
 -- | Pretty print all entries of the whole Ifd
 prettyPrint :: Exif Ifd -> [PrettyEntry]
-prettyPrint (Exif _ ifd) = map ppIfdEntry entries
+prettyPrint (Exif _ ifd) = concatMap prettyPrintIfd $ Map.assocs ifd
+
+-- Pretty print an IFD including it's title
+prettyPrintIfd :: (Word16, Ifd) -> [PrettyEntry]
+prettyPrintIfd (ifdTag, ifdEntries) = title : entries
   where
-      entries = concatMap Map.elems $ Map.elems ifd
+    title = PrettyTitle $ fromMaybe "" mbTitle
+    mbTitle = Map.lookup ifdTag  titlesMap
+    entries = map ppIfdEntry $ Map.elems ifdEntries
+
+-- A map containing the different IFD titles
+titlesMap :: Map.Map Word16 String
+titlesMap = Map.fromList [ (tag0thIfd, "0th IFD")
+                         , (tagExifIfd, "Exif IFD")
+                         , (tagGpsIfd,  "GPS IFD")
+                         , (tagInterIfd, "Interop IFD")
+                         , (tag1stIfd, "1 st IFD (Thumbnail)")]
+
 
 -- | Pretty print a single exif field
 ppIfdEntry :: IfdEntry -> PrettyEntry
 ppIfdEntry (IfdEntry tag val) =
-    PrettyEntry {
-      prettyTag = drop 3 (show tag) , prettyValue = ppIfdValue tag val}
+    PrettyTag (drop 3 (show tag)) (ppIfdValue tag val)
 
 -- PrettyPrint an ExifValue field
 ppIfdValue :: ExifTag -> ExifValue -> String

@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Graphics.Hexif.Parser
     (parseRawExif
     )
@@ -23,8 +21,13 @@ parseRawExif bs = Exif
       , ifdMap = ifdMap
       }
     where
-      (enc, offsetMain) = parseHeader bs
-      mainIfd = parseRawIfd enc bs offsetMain
+      (enc, offset0) = parseHeader bs
+      (offset1, mainIfd) = parseRawIfd enc bs offset0
+
+      mb1stIfd = if offset1 == 0
+                    then Nothing
+                    else Just $ snd $ parseRawIfd enc bs offset1
+
       mbExifIfd = (findRawEntryOffset mainIfd tagExifIfd)
                 >>= mbParseRawIfd enc bs
       mbGpsIfd  = (findRawEntryOffset mainIfd tagGpsIfd)
@@ -33,15 +36,17 @@ parseRawExif bs = Exif
                     Nothing -> Nothing
                     Just inter ->  (findRawEntryOffset inter tagInterIfd)
                        >>= mbParseRawIfd enc bs
+
       mbPair a mbB = case mbB of
         Nothing -> Nothing
         Just b  -> Just (a, b)
 
       ifdMap = Map.fromList $ catMaybes $
-        [ mbPair 0x0000 (Just mainIfd)
+        [ mbPair tag0thIfd (Just mainIfd)
         , mbPair tagExifIfd mbExifIfd
         , mbPair tagInterIfd mbInterIfd
         , mbPair tagGpsIfd mbGpsIfd
+        , mbPair tag1stIfd mb1stIfd
         ]
 
       findRawEntryOffset :: RawIfd -> Word16 -> Maybe Word32
@@ -63,17 +68,19 @@ parseHeader = runGet getHeader
         offset <- getWord32 encoding
         return (encoding, offset)
 
---
-parseRawIfd :: Encoding ->  BL.ByteString -> Word32 -> RawIfd
+-- Parse an Ifd from the bytestring,
+-- Return the offset to the next Ifd and the parsed IFD
+parseRawIfd :: Encoding ->  BL.ByteString -> Word32 -> (Word32, RawIfd)
 parseRawIfd enc bs offset = runGet (getRawIfd enc) bs
   where
-    getRawIfd :: Encoding -> Get RawIfd
+    getRawIfd :: Encoding -> Get (Word32, RawIfd)
     getRawIfd enc = do
         skip $ fromIntegral offset
         n <- getWord16 enc
         raws <- replicateM (fromIntegral n) (parseRawEntry enc)
         let rawPairs = map (\e -> (rawEntryTag e, e)) raws
-        return $ Map.fromList rawPairs
+        nextIfd <- getWord32 enc
+        return $ (nextIfd, Map.fromList rawPairs)
 
     parseRawEntry :: Encoding -> Get RawEntry
     parseRawEntry enc = do
@@ -87,4 +94,4 @@ parseRawIfd enc bs offset = runGet (getRawIfd enc) bs
       return $ RawEntry tag fmt len val16 val32 str
 
 mbParseRawIfd :: Encoding ->  BL.ByteString ->  Word32 -> Maybe RawIfd
-mbParseRawIfd enc bs offset = Just $ parseRawIfd enc bs offset
+mbParseRawIfd enc bs offset = Just $ snd $ parseRawIfd enc bs offset

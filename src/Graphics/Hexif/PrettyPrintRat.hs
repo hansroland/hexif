@@ -10,7 +10,7 @@ import Text.Printf (printf)
 import GHC.Float
 
 
--- | pretty printer for exif tags with multiple rational values.
+-- | Pretty printer for exif tags with multiple rational values.
 ppRationalValues :: ExifTag -> [(Int,Int)] -> String
 ppRationalValues _ []       = "No values"
 ppRationalValues tg (r : []) = ppRationalValue tg r
@@ -19,13 +19,13 @@ ppRationalValues TagGPSLongitude rs     = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLatitude rs  = ppGPSLongLatt rs
 ppRationalValues TagGPSDestLongitude rs = ppGPSLongLatt rs
 ppRationalValues TagGPSTimeStamp rs     = ppGPSTimeStamp $ map rat2Double rs
-ppRationalValues TagGPS0a rs            = "GPS Tag 0a"
-ppRationalValues TagGPS0b rs            = "GPS Tag 0b"
-ppRationalValues TagGPS0f rs            = "GPS Tag 0f"
+ppRationalValues TagGPS0a _             = "GPS Tag 0a"
+ppRationalValues TagGPS0b _             = "GPS Tag 0b"
+ppRationalValues TagGPS0f _             = "GPS Tag 0f"
 ppRationalValues _ rs     = concatMap fmtRat' rs
     where fmtRat' r = fmtRat r ++ " "
 
--- | pretty printer for exif tags with a single rationalvalue.
+-- | Pretty printer for exif tags with a single rational value.
 ppRationalValue :: ExifTag -> (Int,Int) -> String
 ppRationalValue t r
     | t == TagExposureTime = fmtRatWithSlash r ++ " sec."

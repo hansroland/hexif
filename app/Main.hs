@@ -11,9 +11,13 @@ main = do
       then putStrLn "usage: hexif filename"
       else do
         exif <- fromFile $ head args
-        mapM_ print $ allFields exif
+        mapM_ putStrLn $ map format $ allFields exif
         putStrLn ""
         putStrLn "selected Fields"
         print $ getTag exif TagGPSLatitude
         print $ getDateTime exif
         putStrLn "End of Processing"
+
+format :: PrettyEntry -> String
+format (PrettyTitle t) = "\n" ++ t
+format (PrettyTag t v) = "  " ++ t ++ " -> " ++ v

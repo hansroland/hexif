@@ -3,7 +3,7 @@ module Graphics.Hexif
     , PrettyEntry(..)
     , ExifTag(..)
     , fromFile
-    , allFields
+    , prettyPrint
     , getTag
     , findTag
     )
@@ -23,15 +23,10 @@ import Data.List (find)
 
 type Hexif = Exif Ifd
 
--- Return a list of allexif fields found in the file.
-allFields :: Hexif -> [PrettyEntry]
-allFields = prettyPrint
 
 -- | Return the value of a single Exif tag.
-getTag :: Hexif -> ExifTag -> Maybe String
-getTag exif tag = (prettyValue . ppIfdEntry) <$> mbEntry
-  where
-    mbEntry = findTag exif tag
+getTag :: Hexif -> ExifTag -> Maybe PrettyEntry
+getTag exif tag = ppIfdEntry <$> findTag exif tag
 
 -- | Retun the IfdEntry of a single Exif tag
 findTag :: Hexif -> ExifTag -> Maybe IfdEntry

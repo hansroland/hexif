@@ -1,5 +1,3 @@
-{-# LANGUAGE ViewPatterns, ScopedTypeVariables #-}
-
 module Graphics.Hexif.Convert (convert)
 
   where

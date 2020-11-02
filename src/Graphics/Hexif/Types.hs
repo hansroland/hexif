@@ -43,16 +43,12 @@ data IfdEntry = IfdEntry
     { entryTag        :: ExifTag
     , entryValue      :: ExifValue
     }
-instance Show IfdEntry where
-  show entry = "\n" ++ show (entryTag entry) ++ "  " ++ show (entryValue entry)
+    deriving (Show)
 
-data PrettyEntry  = PrettyEntry
-  { prettyTag   :: String
-  , prettyValue :: String
-  }
-
-instance Show PrettyEntry where
-  show e = prettyTag e ++ " -> " ++  prettyValue e
+data PrettyEntry
+    =  PrettyTag String String
+    | PrettyTitle String
+    deriving (Show)
 
 --
 data ExifValue =
@@ -66,8 +62,10 @@ exifValueString :: ExifValue -> Maybe String
 exifValueString (ValueStr str) = Just str
 exifValueString _              = Nothing
 
--- TODO: Add the 0x0000 tag!!
 -- | IFD Tags
+tag0thIfd :: Word16
+tag0thIfd = 0x0000     -- artificial
+
 tagExifIfd :: Word16
 tagExifIfd  = 0x8769
 
@@ -77,12 +75,18 @@ tagGpsIfd   = 0x8825
 tagInterIfd :: Word16
 tagInterIfd = 0xa005
 
+tag1stIfd :: Word16
+tag1stIfd = 0xFFFF     -- artificial
+
+
 tagsMap :: Map.Map Word16 (Word16 -> ExifTag)
-tagsMap = Map.fromList [(0x0000, toStdTag)
+tagsMap = Map.fromList [ (tag0thIfd, toStdTag)
                        , (tagExifIfd, toStdTag)
                        , (tagGpsIfd,  toGpsTag)
-                       , (tagInterIfd, toIopTag)]
+                       , (tagInterIfd, toIopTag)
+                       , (tag1stIfd, toStdTag)]
 
+-- Exif tags pointing to an IFD
 ifdTags :: [Word16]
 ifdTags = [tagExifIfd, tagGpsIfd, tagInterIfd]
 

@@ -3,4 +3,4 @@ cradle:
     - path: "./src"
       component: "lib:hexif"
     - path: "./app"
-      component: "exe:app-hexif"
+      component: "exe:hexif"
