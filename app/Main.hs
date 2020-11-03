@@ -11,7 +11,7 @@ main = do
       then putStrLn "usage: hexif filename"
       else do
         exif <- fromFile $ head args
-        mapM_ putStrLn $ map format $ allFields exif
+        mapM_ putStrLn $ map format $ prettyPrint exif
         putStrLn ""
         putStrLn "selected Fields"
         print $ getTag exif TagGPSLatitude
