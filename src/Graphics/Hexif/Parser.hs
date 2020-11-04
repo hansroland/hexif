@@ -34,7 +34,7 @@ parseRawExif bs = Exif
                 >>= mbParseRawIfd enc bs
       mbInterIfd = case mbExifIfd of
                     Nothing -> Nothing
-                    Just inter ->  (findRawEntryOffset inter tagInterIfd)
+                    Just inter ->  (findRawEntryOffset inter tagIntopIfd)
                        >>= mbParseRawIfd enc bs
 
       mbPair a mbB = case mbB of
@@ -44,7 +44,7 @@ parseRawExif bs = Exif
       ifdMap = Map.fromList $ catMaybes $
         [ mbPair tag0thIfd (Just mainIfd)
         , mbPair tagExifIfd mbExifIfd
-        , mbPair tagInterIfd mbInterIfd
+        , mbPair tagIntopIfd mbInterIfd
         , mbPair tagGpsIfd mbGpsIfd
         , mbPair tag1stIfd mb1stIfd
         ]

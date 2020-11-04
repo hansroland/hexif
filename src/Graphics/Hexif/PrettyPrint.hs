@@ -34,7 +34,7 @@ titlesMap :: Map.Map Word16 String
 titlesMap = Map.fromList [ (tag0thIfd, "0th IFD")
                          , (tagExifIfd, "Exif IFD")
                          , (tagGpsIfd,  "GPS IFD")
-                         , (tagInterIfd, "Interop IFD")
+                         , (tagIntopIfd, "Interop IFD")
                          , (tag1stIfd, "1 st IFD (Thumbnail)")]
 
 

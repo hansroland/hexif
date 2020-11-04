@@ -72,23 +72,23 @@ tagExifIfd  = 0x8769
 tagGpsIfd :: Word16
 tagGpsIfd   = 0x8825
 
-tagInterIfd :: Word16
-tagInterIfd = 0xa005
+tagIntopIfd :: Word16
+tagIntopIfd = 0xa005
 
 tag1stIfd :: Word16
 tag1stIfd = 0xFFFF     -- artificial
 
 
 tagsMap :: Map.Map Word16 (Word16 -> ExifTag)
-tagsMap = Map.fromList [ (tag0thIfd, toStdTag)
-                       , (tagExifIfd, toStdTag)
+tagsMap = Map.fromList [ (tag0thIfd, toIfd0Tag)
+                       , (tagExifIfd, toExifTag)
                        , (tagGpsIfd,  toGpsTag)
-                       , (tagInterIfd, toIopTag)
-                       , (tag1stIfd, toStdTag)]
+                       , (tagIntopIfd, toIopTag)
+                       , (tag1stIfd, toIfd0Tag)]
 
 -- Exif tags pointing to an IFD
 ifdTags :: [Word16]
-ifdTags = [tagExifIfd, tagGpsIfd, tagInterIfd]
+ifdTags = [tagExifIfd, tagGpsIfd, tagIntopIfd]
 
 -- | Definition of all the supported Exif tags
 data ExifTag = TagInteroperabilityIndex
@@ -103,7 +103,6 @@ data ExifTag = TagInteroperabilityIndex
              | TagMake
              | TagOrientation
              | TagSamplesPerPixel
-             | TagTagUnknown String
              | TagXResolution
              | TagYResolution
              | TagResolutionUnit
@@ -214,29 +213,31 @@ data ExifTag = TagInteroperabilityIndex
              | TagGPS18
              | TagGPSAreaInformation
              | TagGPS1F
+             | TagTagUnknownIfd0  String
+             | TagTagUnknownExif  String
+             | TagTagUnknownIntop  String
+             | TagTagUnknownGps  String
      deriving (Eq, Ord, Show)
 
-
--- | Convert a Word16 number to standard Exif tag.
-toStdTag :: Word16 -> ExifTag
-toStdTag t = case t of
+-- | Convert a Word16 number to an Exif Tag found in IFD0.
+toIfd0Tag :: Word16 -> ExifTag
+toIfd0Tag t = case t of
    0x0100 -> TagImageWidth
    0x0101 -> TagImageLength
    0x0102 -> TagBitsPerSample
    0x0103 -> TagCompression
    0x0106 -> TagPhotometricInterpretation
-   0x011a -> TagXResolution
-   0x011b -> TagYResolution
+   0x0115 -> TagSamplesPerPixel
    0x010e -> TagImageDescription
    0x010f -> TagMake
    0x0110 -> TagModel
    0x0112 -> TagOrientation
-   0x0115 -> TagSamplesPerPixel
+   0x011a -> TagXResolution
+   0x011b -> TagYResolution
    0x0128 -> TagResolutionUnit
    0x0131 -> TagSoftware
    0x0132 -> TagDateTime
    0x013b -> TagArtist
-   0x013c -> TagHostComputer
    0x013e -> TagWhitePoint
    0x013f -> TagPrimaryChromaticities
    0x0201 -> TagJPEGInterchangeFormat
@@ -244,9 +245,25 @@ toStdTag t = case t of
    0x0211 -> TagYCbCrCoefficients
    0x0213 -> TagYCbCrPositioning
    0x0214 -> TagReferenceBlackWhite
+   0x8298 -> TagCopyright
+   0x9c9b -> TagXPTitle
+   0x9c9d -> TagXPAuthor
+   0xc4a5 -> TagPrintImageMatching
+   0xc6d2 -> TagPanasonicTitle1
+   0xc6d3 -> TagPanasonicTitle2
+   0xea1c -> TagPadding
+   _ -> TagTagUnknownIfd0 (showHex t)
+
+
+-- | Convert a Word16 number to standard SubIfd tag.
+toExifTag :: Word16 -> ExifTag
+toExifTag t = case t of
+   0x013c -> TagHostComputer
+   0x0211 -> TagYCbCrCoefficients
+   0x0213 -> TagYCbCrPositioning
+   0x0214 -> TagReferenceBlackWhite
    0x1001 -> TagRelatedImageWidth
    0x1002 -> TagRelatedImageLength
-   0x8298 -> TagCopyright
    0x829a -> TagExposureTime
    0x829d -> TagFNumber
    0x8822 -> TagExposureProgram
@@ -276,8 +293,6 @@ toStdTag t = case t of
    0x9290 -> TagSubsecTime
    0x9291 -> TagSubSecTimeOriginal
    0x9292 -> TagSubSecTimeDigitized
-   0x9c9b -> TagXPTitle
-   0x9c9d -> TagXPAuthor
    0xa000 -> TagFlashPixVersion
    0xa001 -> TagColorSpace
    0xa002 -> TagPixelXDimension
@@ -306,12 +321,8 @@ toStdTag t = case t of
    0xa434 -> TagLensModel
    0xa435 -> TagLensSerialModel
    0xa500 -> TagGamma
-   0xc4a5 -> TagPrintImageMatching
-   0xc6d2 -> TagPanasonicTitle1
-   0xc6d3 -> TagPanasonicTitle2
-   0xea1c -> TagPadding
    0xea1d -> TagOffsetSchemata
-   _ -> TagTagUnknown (showHex t)
+   _ -> TagTagUnknownExif (showHex t)
 
 toIopTag :: Word16 -> ExifTag
 toIopTag t = case t of
@@ -319,7 +330,7 @@ toIopTag t = case t of
     0x0002 -> TagInteroperabilityVersion
     0x1001 -> TagRelatedImageWidth
     0x1002 -> TagRelatedImageLength
-    _ -> TagTagUnknown (showHex t)
+    _ -> TagTagUnknownIntop (showHex t)
 
 -- | Convert a Word16 number to an GPS tag
 toGpsTag :: Word16 -> ExifTag
@@ -352,7 +363,7 @@ toGpsTag t = case t of
    0x001c -> TagGPSAreaInformation
    0x001d -> TagGPSDateStamp
    0x001f -> TagGPS1F
-   _ -> TagTagUnknown  (showHex t)
+   _ -> TagTagUnknownGps (showHex t)
 
 data ExifDataType
     = TypeByte          --  1 - An 8-bit unsigned integer.,
