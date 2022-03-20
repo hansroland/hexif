@@ -50,6 +50,11 @@ data PrettyEntry
     | PrettyTitle String
     deriving (Show)
 
+-- RSX TODO Clean up together with ShowOnSwissMap
+printTagValue :: PrettyEntry -> String
+printTagValue (PrettyTag _ val) = val 
+printTagValue _ = "" 
+
 --
 data ExifValue =
     ValueInt Int

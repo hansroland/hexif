@@ -6,6 +6,7 @@ module Graphics.Hexif
     , prettyPrint
     , getTag
     , findTag
+    , printTagValue
     )
 
 where
