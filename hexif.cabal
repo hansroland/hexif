@@ -3,7 +3,7 @@ cabal-version:       >=1.10
 -- For further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                hexif
-version:             0.3.0.1
+version:             0.3.0.2
 synopsis:            Another attempt to parse and re-write JPEG-Exif files
 -- description:
 -- bug-reports:
@@ -30,8 +30,8 @@ library
                       , Graphics.Hexif.Utils
 
   -- other-extensions:
-  build-depends:       base >= 4.13 && < 4.16
-                       , containers >= 0.6 && < 0.8
+  build-depends:       base >= 4.13 && < 4.17
+                       , containers
                        , binary
                        , bytestring
                        , hex
@@ -43,7 +43,7 @@ executable             hexif
   main-is:             Main.hs
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.13 && < 4.16
+  build-depends:       base >=4.13 && < 4.17
                        , hexif
                        , bytestring
                        , directory
